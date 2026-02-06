@@ -1,0 +1,1387 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Neon Leap 20.0 - Ultimate Stats</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700;800&display=swap');
+  
+  :root {
+    --c-bg: #05070a;
+    --c-primary: #00f1ff;
+    --c-accent: #ffe900;
+    --c-danger: #ff0055;
+    --c-rare: #a020f0;
+    --c-fire: #ff6600;
+    --font-main: 'Rajdhani', sans-serif;
+  }
+
+  html,body { margin:0; padding:0; width:100%; height:100%; background:var(--c-bg); overflow:hidden; font-family:var(--font-main); user-select:none; -webkit-user-select:none; }
+  #game { position:relative; width:100%; height:100%; cursor:crosshair; }
+  canvas { position:absolute; top:0; left:0; width:100%; height:100%; }
+  #bg-canvas { z-index:0; }
+  #game-canvas { z-index:10; }
+  
+  /* --- HUD --- */
+  .ui-layer { position:absolute; top:0; left:0; width:100%; height:100%; z-index:20; pointer-events:none; }
+  
+  .hud-top {
+      position: absolute; top: 0; left: 0; width: 100%; padding: 20px;
+      display: flex; justify-content: space-between; align-items: flex-start; box-sizing: border-box;
+  }
+
+  .hud-widget {
+      background: rgba(0, 0, 0, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(8px);
+      padding: 8px 25px;
+      border-radius: 6px;
+      color: #fff; font-weight: 800; font-size: 1.5rem;
+      display: flex; align-items: center; gap: 15px;
+      box-shadow: 0 5px 20px rgba(0,0,0,0.4);
+      transform: skewX(-10deg);
+  }
+  .hud-widget span { transform: skewX(10deg); display:inline-block; }
+  
+  .hud-money { border-left: 4px solid var(--c-accent); color: var(--c-accent); }
+  .hud-level { border-right: 4px solid var(--c-primary); color: var(--c-primary); flex-direction: row-reverse; }
+  
+  .hud-streak { 
+      position: absolute; top: 90px; left: 20px;
+      border-bottom: 4px solid var(--c-fire); color: var(--c-fire); 
+      display: none; 
+  } 
+  
+  .hud-timer { 
+      border-bottom: 4px solid var(--c-danger); color: #fff; 
+      font-family: monospace; letter-spacing: 2px; 
+      display: none; 
+      position: absolute; left: 50%; transform: translateX(-50%); top: 20px;
+  }
+  
+  .hud-score { border-bottom: 4px solid var(--c-rare); color: #fff; display:none; }
+
+  #prog-container {
+      position: absolute; top: 0; left: 0; width: 100%; height: 6px;
+      background: rgba(255,255,255,0.1); z-index: 25; display: none;
+  }
+  #prog-bar {
+      height: 100%; background: var(--c-primary); width: 0%;
+      box-shadow: 0 0 10px var(--c-primary); transition: width 0.1s linear;
+  }
+
+  .hud-pause {
+      pointer-events: auto; cursor: pointer;
+      background: rgba(0,0,0,0.5); border: 2px solid rgba(255,255,255,0.2);
+      width: 40px; height: 40px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      color: #fff; font-weight:bold; transition: 0.2s;
+      position: absolute; right: 20px; top: 80px; 
+  }
+  .hud-pause:hover { border-color: var(--c-primary); color: var(--c-primary); background: #fff; }
+
+  .hud-abilities { display: none !important; }
+
+  #start-overlay {
+      position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%);
+      font-size: 8rem; color: #fff; font-weight: 900; font-style: italic;
+      text-shadow: 0 0 30px var(--c-primary); pointer-events: none; opacity: 0;
+      transition: opacity 0.2s, transform 0.2s; z-index: 50;
+  }
+
+  /* POPUP MENUS */
+  .overlay-menu {
+      position: absolute; top:0; left:0; width:100%; height:100%;
+      background: rgba(0,0,0,0.85); z-index: 60; pointer-events: auto;
+      backdrop-filter: blur(10px);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+  }
+  
+  .win-title { font-size: 3rem; color: #fff; font-weight: 900; font-style: italic; text-transform: uppercase; margin-bottom: 10px; }
+  .win-time { font-size: 5rem; color: var(--c-primary); font-family: monospace; font-weight: bold; margin-bottom: 20px; text-shadow: 0 0 30px var(--c-primary); }
+  .new-record-anim { animation: pulseRecord 0.5s infinite alternate; color: var(--c-accent); font-size: 2rem; font-weight: bold; margin-bottom: 20px; letter-spacing: 5px; }
+  
+  @keyframes pulseRecord { from { transform: scale(1); text-shadow: 0 0 10px var(--c-accent); } to { transform: scale(1.2); text-shadow: 0 0 30px var(--c-accent); } }
+
+  .chal-pop {
+      position: absolute; top: 100px; right: -300px; background: rgba(0,0,0,0.9);
+      border: 1px solid var(--c-accent); padding: 15px 25px; color: #fff;
+      display: flex; align-items: center; gap: 15px; z-index: 50; transition: right 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      border-radius: 8px 0 0 8px; box-shadow: -5px 5px 20px rgba(0,0,0,0.5);
+  }
+  .chal-pop.show { right: 0; }
+  .chal-icon { font-size: 2rem; }
+  .chal-info div:first-child { color: var(--c-accent); font-weight: bold; font-size: 0.8rem; letter-spacing: 1px; }
+  .chal-info div:last-child { font-weight: bold; font-size: 1.1rem; }
+
+  .menu-screen {
+      position: absolute; top:0; left:0; width:100%; height:100%; 
+      background: rgba(5, 7, 10, 0.96); z-index: 100; pointer-events: auto;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      transition: opacity 0.3s; opacity: 0; pointer-events: none;
+      backdrop-filter: blur(20px);
+  }
+  .menu-screen.active { opacity: 1; pointer-events: auto; }
+  
+  .menu-content { 
+      width: 100%; max-width: 1000px; height: 100%; overflow-y: auto;
+      padding: 40px; text-align: center; box-sizing: border-box;
+      display: flex; flex-direction: column; align-items: center;
+  }
+
+  .menu-content::-webkit-scrollbar { width: 8px; }
+  .menu-content::-webkit-scrollbar-track { background: #111; }
+  .menu-content::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+  .menu-content::-webkit-scrollbar-thumb:hover { background: var(--c-primary); }
+
+  h1 { font-size: 5rem; margin: 0; color: #fff; text-transform: uppercase; font-style: italic; line-height: 0.8; letter-spacing: -4px; text-shadow: 5px 5px 0px rgba(0, 241, 255, 0.2); transform: skewX(-5deg); margin-bottom: 20px; }
+  h1 span { color: var(--c-primary); }
+  h2 { font-size: 1.5rem; color: #667; margin-bottom: 30px; letter-spacing: 5px; text-transform: uppercase; font-weight: 600; }
+  
+  .btn {
+      background: linear-gradient(90deg, #1a1a1a, #111);
+      border: 1px solid #333; color: #fff; padding: 25px 50px;
+      font-size: 1.5rem; line-height: 1.2;
+      font-family: inherit; font-weight: 800; cursor: pointer;
+      position: relative; overflow: hidden; text-transform: uppercase; letter-spacing: 2px;
+      clip-path: polygon(15px 0, 100% 0, 100% calc(100% - 15px), calc(100% - 15px) 100%, 0 100%, 0 15px);
+      transition: 0.2s; margin: 15px; min-width: 300px;
+      display: inline-flex; justify-content: center; align-items: center;
+  }
+  .btn:hover { background: #fff; color: #000; transform: scale(1.05) skewX(-5deg); box-shadow: 0 0 30px rgba(255,255,255,0.3); }
+  .btn-primary { border-color: var(--c-primary); color: var(--c-primary); }
+  .btn-primary:hover { background: var(--c-primary); color: #000; box-shadow: 0 0 40px var(--c-primary); }
+  .btn-danger { border-color: var(--c-danger); color: var(--c-danger); }
+  .btn-danger:hover { background: var(--c-danger); color: #fff; box-shadow: 0 0 40px var(--c-danger); }
+  .btn-rare { border-color: var(--c-rare); color: var(--c-rare); }
+  .btn-rare:hover { background: var(--c-rare); color: #fff; box-shadow: 0 0 40px var(--c-rare); }
+  .btn-accent { border-color: var(--c-accent); color: var(--c-accent); }
+  .btn-accent:hover { background: var(--c-accent); color: #000; box-shadow: 0 0 40px var(--c-accent); }
+
+  .mode-select { display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; margin-bottom: 40px; }
+  .mode-card { width: 200px; padding: 20px; border: 1px solid #333; background: #0b0e14; border-radius: 8px; text-align: left; cursor: pointer; transition: 0.2s; display: flex; flex-direction: column; gap: 10px; position: relative; }
+  .mode-card:hover { border-color: var(--c-primary); transform: translateY(-5px); }
+  .mode-card h3 { margin: 0; color: #fff; font-size: 1.2rem; }
+  .mode-card p { margin: 0; color: #666; font-size: 0.9rem; }
+
+  .stats-container { width: 100%; max-width: 900px; text-align: left; }
+  .stats-header { border-bottom: 2px solid #333; padding-bottom: 20px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: flex-end; }
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; width: 100%; margin-bottom: 40px; }
+  .stat-card { background: rgba(255,255,255,0.05); padding: 20px; border-radius: 4px; border-left: 3px solid #333; }
+  .stat-card.highlight { border-color: var(--c-accent); background: rgba(255, 233, 0, 0.05); }
+  .stat-val { font-size: 2rem; font-weight: 800; color: #fff; }
+  .stat-label { font-size: 0.8rem; color: #888; text-transform: uppercase; letter-spacing: 2px; margin-top: 5px; }
+  .records-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; max-height: 400px; overflow-y: auto; padding-right: 10px; }
+  .record-item { background: #111; padding: 10px 15px; display: flex; justify-content: space-between; border-radius: 4px; border: 1px solid #222; font-family: monospace; }
+  .record-item span:first-child { color: #888; }
+  .record-item span:last-child { color: var(--c-primary); font-weight: bold; }
+
+  .shop-container { width: 100%; max-width: 900px; }
+  .shop-nav { display: flex; justify-content: center; gap: 15px; margin-bottom: 25px; border-bottom: 1px solid #333; padding-bottom: 15px; }
+  .shop-tab { background: none; border: none; color: #666; font-size: 1.2rem; font-weight: bold; cursor: pointer; text-transform: uppercase; padding: 5px 15px; transition: 0.2s; }
+  .shop-tab:hover { color: #fff; }
+  .shop-tab.active { color: var(--c-primary); border-bottom: 2px solid var(--c-primary); }
+
+  .shop-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 15px; width: 100%; padding-bottom: 50px; }
+  .shop-card { background: rgba(20, 25, 35, 0.6); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 15px; display: flex; flex-direction: column; align-items: center; transition: 0.2s; position: relative; }
+  .shop-card:hover { transform: translateY(-5px); background: rgba(30, 35, 45, 0.8); border-color: #fff; }
+  .shop-card.owned { border-color: #00ffaa; box-shadow: 0 0 5px rgba(0,255,170,0.1); }
+  .shop-card.selected { border: 2px solid var(--c-primary); background: rgba(0, 241, 255, 0.05); }
+  .card-preview { width: 50px; height: 50px; margin-bottom: 10px; border-radius: 4px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; }
+  .card-btn { width: 100%; padding: 8px 0; border: none; font-weight: 800; cursor: pointer; margin-top: 10px; border-radius: 4px; }
+  .card-btn.buy { background: var(--c-accent); color: #000; }
+  
+  .coupon-area { display: flex; gap: 10px; margin-bottom: 20px; justify-content: center; width: 100%; }
+  .coupon-input { background: #111; border: 1px solid #333; color: #fff; padding: 10px 15px; font-family: inherit; font-weight: bold; text-transform: uppercase; width: 200px; }
+  .coupon-btn { background: #333; color: #fff; border: none; padding: 0 20px; cursor: pointer; font-weight: bold; }
+  .coupon-btn:hover { background: var(--c-primary); color: #000; }
+
+  .level-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); gap: 10px; width: 100%; max-width: 900px; padding-bottom: 40px; }
+  .lvl-btn { width: 70px; height: 70px; background: #111; border: 1px solid #333; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #555; border-radius: 4px; cursor: default; transition: 0.2s; font-weight: bold; position: relative; }
+  .lvl-num { font-size: 1.4rem; }
+  .lvl-time { font-size: 0.7rem; margin-top: 2px; color: var(--c-primary); font-family: monospace; }
+  .lvl-btn.unlocked { color: #fff; border-color: var(--c-primary); cursor: pointer; background: rgba(0, 241, 255, 0.1); }
+  .lvl-btn.unlocked:hover { background: var(--c-primary); color: #000; transform: scale(1.1); }
+  .lvl-btn.completed { border-color: var(--c-accent); color: var(--c-accent); background: rgba(255, 233, 0, 0.1); }
+
+  #mobile { display:none; position:absolute; bottom:0; left:0; width:100%; height:100%; z-index:50; pointer-events:none; }
+  .t-btn { pointer-events:auto; position:absolute; width:75px; height:75px; border:2px solid rgba(255,255,255,0.1); border-radius:50%; display:flex; align-items:center; justify-content:center; color:rgba(255,255,255,0.6); font-size:30px; backdrop-filter:blur(5px); transition: 0.1s; }
+  .t-btn:active { background: #fff; color: #000; opacity: 0.8; }
+  #mb-l { bottom: 30px; left: 30px; }
+  #mb-r { bottom: 30px; left: 125px; }
+  #mb-j { bottom: 30px; right: 30px; width: 90px; height: 90px; border-color: rgba(255, 233, 0, 0.4); color: var(--c-accent); }
+  #mb-d { bottom: 140px; right: 30px; border-color: rgba(255, 0, 85, 0.4); color: var(--c-danger); }
+  
+  @media (hover: none) and (pointer: coarse) { #mobile { display: block; } }
+  @media(max-width:800px){ h1{font-size:3rem;} .shop-grid{grid-template-columns: 1fr 1fr;} }
+</style>
+</head>
+<body>
+
+<div id="game">
+  <canvas id="bg-canvas"></canvas>
+  <canvas id="game-canvas"></canvas>
+  
+  <!-- HUD -->
+  <div id="ui" class="ui-layer" style="display:none;">
+    <div id="prog-container"><div id="prog-bar"></div></div>
+    
+    <div class="hud-top">
+        <div class="hud-widget hud-money"><span>₳</span> <span id="val-money">0</span></div>
+        <div class="hud-widget hud-score" id="hud-score">0m</div>
+        <div class="hud-widget hud-timer" id="hud-timer">00:00</div>
+        <div class="hud-widget hud-streak" id="hud-streak">🔥 <span id="val-streak">0</span></div>
+        <div class="hud-widget hud-level" id="hud-lvl-box"><span id="val-level">1</span> <span>LVL</span></div>
+    </div>
+    
+    <div class="hud-pause" onclick="Game.togglePause()">||</div>
+    
+    <div id="start-overlay">GO!</div>
+    
+    <!-- Pause Menu Overlay -->
+    <div id="pause-menu" class="overlay-menu" style="display:none;">
+        <h2 style="color:#fff; font-size:4rem; margin-bottom:40px; text-shadow:0 0 20px var(--c-primary)">PAUSED</h2>
+        <button class="btn btn-primary" onclick="Game.togglePause()">RESUME</button>
+        <button class="btn btn-danger" onclick="Game.menu()">EXIT TO MENU</button>
+    </div>
+
+    <!-- Win / Record Menu Overlay -->
+    <div id="win-menu" class="overlay-menu" style="display:none;">
+        <div id="win-new-record" class="new-record-anim" style="display:none;">NEW RECORD!</div>
+        <div class="win-title">LEVEL COMPLETE</div>
+        <div id="win-time-val" class="win-time">00:00</div>
+        <div style="display:flex; gap:10px;">
+            <button class="btn btn-rare" onclick="Game.retryLevel()">RETRY</button>
+            <button class="btn btn-primary" onclick="Game.nextLevel()">NEXT LEVEL</button>
+        </div>
+        <button class="btn" style="margin-top:0; min-width:auto; padding:15px 30px" onclick="Game.menu()">MENU</button>
+    </div>
+
+    <div id="chal-pop" class="chal-pop">
+        <div class="chal-icon">🏆</div>
+        <div class="chal-info">
+            <div>CHALLENGE COMPLETE</div>
+            <div id="chal-name">First Blood</div>
+        </div>
+    </div>
+  </div>
+
+  <!-- MOBILE -->
+  <div id="mobile">
+    <div id="mb-l" class="t-btn">←</div>
+    <div id="mb-r" class="t-btn">→</div>
+    <div id="mb-j" class="t-btn">↑</div>
+    <div id="mb-d" class="t-btn">⚡</div>
+  </div>
+
+  <!-- MENU -->
+  <div id="menu" class="menu-screen active">
+    <div class="menu-content" id="menu-content"></div>
+  </div>
+</div>
+
+<script>
+// --- CONFIGURATION ---
+var CFG = {
+    G: 0.6, MAX_G: 12, FRIC: 0.85, AIR_FRIC: 0.95, ACC: 1.2, MAX_S: 9,
+    JUMP: -13, DASH: 22, WALL_SLIDE: 2, WALL_JUMP: {x: 10, y: -12},
+    COYOTE: 10, BUFFER: 8, TILE: 40, MAX_LEVELS: 300
+};
+
+// --- DATA ---
+var DB = {
+    skins: [
+        {n:"Default", c:"#ffe900", p:0},
+        {n:"Neon", c:"#00f1ff", p:500},
+        {n:"Crimson", c:"#ff0055", p:1000},
+        {n:"Biohazard", c:"#ccff00", p:2500, glow:1},
+        {n:"Ninja", c:"#333", b:"#555", p:4000},
+        {n:"Ghost", c:"rgba(255,255,255,0.4)", b:"#fff", p:6000},
+        {n:"Midas", c:"#ffd700", glow:1, p:10000},
+        {n:"Cyclops", c:"#f80", eye:1, p:12000},
+        {n:"Inferno", c:"#ff4400", glow:1, p:15000},
+        {n:"Emoji", c:"#ff0", eye:1, b:"#000", p:18000},
+        {n:"Void", c:"#000", b:"#fff", glow:1, p:50000},
+        {n:"Demon", c:"#600", b:"#f00", eye:1, p:75000}
+    ],
+    upgrades: [
+        {id:"double", n:"Double Jump", d:"Jump again in mid-air", p:2500, passive:true},
+        {id:"dash", n:"Phase Dash", d:"Shift/X to Dash", p:3500, ic:"⚡", active:true},
+        {id:"magnet", n:"Coin Magnet", d:"Attracts coins", p:4000, passive:true},
+        {id:"climb", n:"Wall Climb", d:"Climb walls", p:5000, passive:true},
+        {id:"stomp", n:"Super Stomp", d:"Down to smash", p:7000, passive:true},
+        {id:"sonic", n:"Sonic Boom", d:"Speed destroys enemies", p:18000, passive:true},
+        {id:"glider", n:"Glider", d:"Hold Jump to glide", p:15000, passive:true}
+    ],
+    challenges: [
+        {id:"jump1k", n:"Bunny Hopper", d:"Jump 1000 times", goal:1000, stat:"jumps", r:500},
+        {id:"run10k", n:"Marathon Runner", d:"Run 10,000m total", goal:10000, stat:"distance", r:1000},
+        {id:"coin500", n:"Treasure Hunter", d:"Collect 500 coins", goal:500, stat:"coins", r:2000},
+        {id:"death50", n:"Determination", d:"Die 50 times", goal:50, stat:"deaths", r:1000},
+        {id:"endless500", n:"Survivor", d:"Reach 500m in Endless", goal:500, stat:"maxEndless", r:3000},
+        {id:"levels20", n:"Explorer", d:"Unlock 20 levels", goal:20, stat:"unlocked", r:5000}
+    ]
+};
+
+var Save = { 
+    money:0, level:0, maxLvl:0, skin:0, skins:[0], ups:{}, 
+    stats:{jumps:0, distance:0, deaths:0, coins:0, maxEndless:0, unlocked:1},
+    chals:[],
+    times:{}, 
+    codes:[],
+    daily: { date: "", tasks: [] }
+};
+
+try { 
+    let s=localStorage.getItem('nl20_ultimate'); 
+    if(s) {
+        let loaded = JSON.parse(s);
+        Save = Object.assign(Save, loaded);
+        if(!Save.stats) Save.stats = {jumps:0, distance:0, deaths:0, coins:0, maxEndless:0, unlocked:1};
+        if(!Save.times) Save.times = {};
+        if(!Save.codes) Save.codes = [];
+        if(!Save.daily || Array.isArray(Save.daily)) Save.daily = { date: "", tasks: [] }; // Reset/Migrate old structure
+    }
+} catch(e){}
+const save = () => {
+    Save.stats.unlocked = Save.maxLvl + 1;
+    localStorage.setItem('nl20_ultimate', JSON.stringify(Save));
+};
+
+const DAILY_DEFS = [
+    { id: 0, n: "Coin Collector", d: "Collect 50 coins today", goal: 50, r: 500, stat: "coins" },
+    { id: 1, n: "Level Master", d: "Complete 5 levels today", goal: 5, r: 800, stat: "levels" },
+    { id: 2, n: "Death Defier", d: "Die 10 times today", goal: 10, r: 300, stat: "deaths" },
+    { id: 3, n: "Speed Demon", d: "Dash 20 times today", goal: 20, r: 400, stat: "dashes" },
+    { id: 4, n: "High Jumper", d: "Jump 100 times today", goal: 100, r: 400, stat: "jumps" }
+];
+
+// Check Daily
+const checkDaily = () => {
+    let today = new Date().toDateString();
+    if(Save.daily.date !== today) {
+        Save.daily.date = today;
+        let indices = [];
+        while(indices.length < 2) {
+            let r = Math.floor(Math.random() * DAILY_DEFS.length);
+            if(indices.indexOf(r) === -1) indices.push(r);
+        }
+        Save.daily.tasks = indices.map(id => ({ id: id, p: 0, c: false }));
+        save();
+    }
+};
+checkDaily();
+
+// --- ENGINE ---
+var cvs = document.getElementById('game-canvas');
+var ctx = cvs.getContext('2d');
+var bgCvs = document.getElementById('bg-canvas');
+var bgCtx = bgCvs.getContext('2d');
+
+var MODE = { NORMAL: 0, TIME: 1, ENDLESS: 2 };
+var currentMode = MODE.NORMAL;
+var state = 'MENU';
+var paused = false; // Pause state
+var cam = {x:0, y:0};
+var map = {w:0, h:0, d:[], o:[]}; 
+var parts = [];
+var texts = []; // Floating texts
+var shake = 0;
+var frame = 0;
+var lastTime = 0;
+var endX = 0;
+var endlessScore = 0;
+var startTime = 0;
+var pauseTimeStart = 0; // To adjust timer
+var currentStreak = 0; // Win streak
+
+// Input System
+var In = { k:{}, prevK:{}, init(){
+    window.addEventListener('keydown', e => {
+        In.k[e.code]=true;
+        // Instant Restart on 'R'
+        if(e.code === 'KeyR' && state === 'PLAY' && !paused) {
+             die();
+        }
+    });
+    window.addEventListener('keyup', e => In.k[e.code]=false);
+    
+    const t = (id,k) => {
+        let el=document.getElementById(id);
+        if(el) {
+            el.addEventListener('touchstart', e=>{ e.preventDefault(); In.k[k]=true; });
+            el.addEventListener('touchend', e=>{ e.preventDefault(); In.k[k]=false; });
+        }
+    };
+    t('mb-l','ArrowLeft'); t('mb-r','ArrowRight'); t('mb-j','ArrowUp'); t('mb-d','KeyX');
+}};
+
+// Player
+var P = {
+    x:0, y:0, w:30, h:30, vx:0, vy:0,
+    ground:false, wall:0, jumps:0,
+    dead:false, dTime:0, dCool:0,
+    shield:false, coyote:0, buffer:0, invincible:0,
+    
+    reset(x,y) {
+        this.x=x; this.y=y; this.vx=0; this.vy=0;
+        this.dead=false; this.dTime=0; this.invincible=0;
+        this.jumps = Save.ups.double ? 1 : 0;
+    },
+    
+    update(dt) {
+        if(this.dead) return;
+        
+        // Stats
+        if(Math.abs(this.vx) > 0.1) Save.stats.distance += (Math.abs(this.vx) * dt) / 100;
+
+        let l = In.k['ArrowLeft']||In.k['KeyA'];
+        let r = In.k['ArrowRight']||In.k['KeyD'];
+        let j = In.k['ArrowUp']||In.k['Space']||In.k['KeyW'];
+        let d = In.k['ShiftLeft']||In.k['KeyK']||In.k['KeyX']; 
+        let s = In.k['ArrowDown']||In.k['KeyS']; 
+        
+        // Dash
+        if(this.dCool>0) this.dCool -= dt;
+        if(this.invincible>0) this.invincible -= dt;
+        
+        if(d && this.dCool<=0 && Save.ups.dash) {
+            this.dTime=10; this.dCool=45; this.invincible=15;
+            let dir = this.vx !== 0 ? Math.sign(this.vx) : (r ? 1 : -1);
+            if(l) dir = -1; if(r) dir = 1;
+            this.vx = dir * CFG.DASH; this.vy = 0;
+            shake = 8; FX.boom(this.x, this.y, 10, '#00f1ff');
+            updateDaily("dashes");
+        }
+        
+        if(this.dTime>0) {
+            this.dTime -= dt; this.x += this.vx * dt;
+            if(this.dTime<=0) this.vx *= 0.5;
+            col(true); return;
+        }
+
+        // Horizontal Movement
+        let acc = CFG.ACC * dt;
+        if(l) this.vx -= acc;
+        if(r) this.vx += acc;
+        
+        let fric = this.ground ? CFG.FRIC : CFG.AIR_FRIC;
+        if(!l && !r) this.vx *= Math.pow(fric, dt);
+        
+        let maxS = CFG.MAX_S;
+        this.vx = Math.max(-maxS, Math.min(maxS, this.vx));
+        
+        if(Save.ups.sonic && Math.abs(this.vx) > CFG.MAX_S * 0.95 && frame%10===0) {
+            FX.part(this.x, this.y, 1, '#fff'); this.invincible = 2; 
+        }
+        
+        // Vertical
+        let climbing = false;
+        if(this.wall !== 0 && !this.ground) { 
+             if(this.vy > 0) this.vy = Math.min(this.vy, CFG.WALL_SLIDE);
+             if(Save.ups.climb && ((this.wall===1 && r) || (this.wall===-1 && l))) {
+                 this.vy = -3; climbing = true;
+             }
+        }
+        
+        if(!climbing) {
+            if(Save.ups.glider && j && this.vy > 0) {
+                this.vy += CFG.G * 0.3 * dt; // Increased gravity for glider nerf
+                if(this.vy > 4) this.vy = 4; // Higher terminal velocity for nerf
+                if(frame%5==0) FX.part(this.x+15, this.y+30, 1, '#fff');
+            } 
+            else if(Save.ups.stomp && s && !this.ground) {
+                this.vy += 2 * dt; FX.part(this.x+15, this.y, 1, '#ff0055');
+            }
+            else { this.vy += CFG.G * dt; }
+            if(this.vy > CFG.MAX_G) this.vy = CFG.MAX_G; 
+            if(this.wall !== 0 && this.vy > 0) this.vy = Math.min(this.vy, CFG.WALL_SLIDE); 
+        }
+        
+        // Jump
+        if(this.coyote > 0) this.coyote -= dt;
+        if(this.buffer > 0) this.buffer -= dt;
+        
+        if(j && !In.prevK['ArrowUp'] && !In.prevK['Space'] && !In.prevK['KeyW']) this.buffer = CFG.BUFFER;
+        
+        if(this.buffer > 0) {
+            let jumped = false;
+            if(this.wall !== 0 && !this.ground) { 
+                this.vy = CFG.WALL_JUMP.y;
+                this.vx = -this.wall * CFG.WALL_JUMP.x;
+                jumped = true;
+            } else if(this.ground || this.coyote > 0) { 
+                this.vy = CFG.JUMP; jumped = true;
+            } else if(this.jumps > 0) { 
+                this.vy = CFG.JUMP; this.jumps--; jumped = true;
+                FX.boom(this.x, this.y+30, 5, '#fff');
+            }
+            if(jumped) {
+                this.buffer = 0; this.coyote = 0; this.ground = false;
+                FX.part(this.x+15, this.y+30, 5, '#fff');
+                Save.stats.jumps++;
+                updateDaily("jumps");
+            }
+        }
+        
+        if(!j && this.vy < -5) this.vy *= 0.6;
+
+        this.x += this.vx * dt; col(true);
+        this.y += this.vy * dt; col(false);
+        
+        if(this.ground) {
+            this.coyote = CFG.COYOTE;
+            this.jumps = Save.ups.double ? 1 : 0;
+        }
+        
+        this.wall = 0;
+        if(!this.ground) {
+            if(isSolid(this.x-2, this.y)) this.wall = -1;
+            if(isSolid(this.x+32, this.y)) this.wall = 1;
+        }
+        
+        if(this.y > map.h * CFG.TILE + 200) die();
+    },
+    
+    draw() {
+        if(this.dead) return;
+        let s = DB.skins[Save.skin];
+        
+        if(Math.abs(this.vx) > 8) {
+            ctx.globalAlpha = 0.3; ctx.fillStyle = s.c;
+            ctx.fillRect(this.x - this.vx*0.5, this.y - this.vy*0.5, 30, 30);
+            ctx.globalAlpha = 1;
+        }
+        
+        ctx.fillStyle = this.invincible > 0 ? '#fff' : s.c;
+        if(s.glow) { ctx.shadowBlur=20; ctx.shadowColor=s.c; }
+        
+        let sx=0, sy=0;
+        if(Math.abs(this.vy)>10) { sx=-4; sy=4; }
+        if(Math.abs(this.vx)>8) { sx=4; sy=-2; }
+        
+        ctx.save();
+        ctx.translate(this.x+15, this.y+15);
+        ctx.fillRect(-15-sx/2, -15-sy, 30+sx, 30+sy);
+        
+        if(s.b) {
+            ctx.strokeStyle = s.b;
+            ctx.lineWidth=3;
+            ctx.strokeRect(-15-sx/2, -15-sy, 30+sx, 30+sy);
+        }
+        
+        this.drawEyes(sx, sy);
+        ctx.restore();
+        ctx.shadowBlur=0;
+    },
+    
+    drawEyes(sx, sy) {
+        ctx.fillStyle = "#fff";
+        let lx = 0, ly = 0;
+        if(this.vx > 1) lx = 4; else if(this.vx < -1) lx = -4;
+        if(this.vy > 1) ly = 4; else if(this.vy < -1) ly = -4;
+        
+        if(frame % 150 < 10) {
+            ctx.fillRect(-8 + lx, -5 + ly, 6, 2);
+            ctx.fillRect(2 + lx, -5 + ly, 6, 2);
+        } else {
+            ctx.fillRect(-10, -8, 8, 8);
+            ctx.fillRect(2, -8, 8, 8);
+            ctx.fillStyle = "#000";
+            ctx.fillRect(-8 + lx*0.5, -6 + ly*0.5, 4, 4);
+            ctx.fillRect(4 + lx*0.5, -6 + ly*0.5, 4, 4);
+        }
+    }
+};
+
+// --- SEEDED RANDOM ---
+var _seed = 1;
+function rand() {
+    _seed = (_seed * 9301 + 49297) % 233280;
+    return _seed / 233280;
+}
+function setSeed(s) { _seed = s; }
+
+// --- PHYSICS ---
+function isSolid(x,y) {
+    let tx = Math.floor(x/CFG.TILE), ty = Math.floor(y/CFG.TILE);
+    if(ty<0) return false;
+    if(currentMode === MODE.ENDLESS && tx >= endX - 50) genEndless();
+    if(tx<0||tx>=map.w||ty>=map.h) return false;
+    let t = map.d[ty][tx];
+    return t===1;
+}
+
+function col(axisX) {
+    let tiles = [];
+    let startX = Math.floor(P.x / CFG.TILE);
+    let endX = Math.floor((P.x + P.w - 0.1) / CFG.TILE);
+    let startY = Math.floor(P.y / CFG.TILE);
+    let endY = Math.floor((P.y + P.h - 0.1) / CFG.TILE);
+
+    for(let y=startY; y<=endY; y++) {
+        for(let x=startX; x<=endX; x++) {
+            if(y>=0 && y<map.h && x>=0 && x<map.w) {
+                if(map.d[y][x] === 1) tiles.push({x:x*CFG.TILE, y:y*CFG.TILE});
+            }
+        }
+    }
+
+    for(let t of tiles) {
+        if(axisX) {
+            if(P.vx > 0) { P.x = t.x - P.w; P.vx = 0; }
+            else if(P.vx < 0) { P.x = t.x + CFG.TILE; P.vx = 0; }
+        } else {
+            if(P.vy > 0) { P.y = t.y - P.h; P.vy = 0; P.ground = true; }
+            else if(P.vy < 0) { P.y = t.y + CFG.TILE; P.vy = 0; }
+        }
+    }
+    
+    let cx = P.x + 15, cy = P.y + 15;
+    let tx = Math.floor(cx/CFG.TILE), ty = Math.floor(cy/CFG.TILE);
+    if(ty>=0 && ty<map.h && tx>=0 && tx<map.w) {
+        let t = map.d[ty][tx];
+        if(t===2) { // Spike
+            if(P.invincible>0) return;
+            die();
+        }
+        if(t===3 && currentMode !== MODE.ENDLESS) win();
+        if(t===4) { // Jump Pad
+            P.vy = -25; FX.boom(P.x, P.y+20, 10, '#a0f');
+        }
+    }
+}
+
+function die() {
+    if(P.dead || P.invincible>0) return;
+    P.dead = true; shake = 20; Save.stats.deaths++; 
+    currentStreak = 0; updateStreakUI();
+    updateDaily("deaths");
+    
+    save();
+    FX.boom(P.x, P.y, 30, '#fff');
+    setTimeout(() => {
+        if(currentMode === MODE.ENDLESS) Game.menu();
+        else startGame(Save.level, currentMode); 
+    }, 400); 
+}
+
+function win() {
+    if(state === 'WIN') return; 
+    state = 'WIN';
+    currentStreak++; updateStreakUI();
+    updateDaily("levels");
+    
+    let duration = Date.now() - startTime;
+    
+    // Time Trial Special Logic
+    if(currentMode === MODE.TIME) {
+        let isRecord = false;
+        if(!Save.times[Save.level] || duration < Save.times[Save.level]) {
+            Save.times[Save.level] = duration;
+            isRecord = true;
+        }
+        save();
+        showWinMenu(duration, isRecord);
+    } else {
+        // Unlock next level in Normal
+        if(Save.level >= Save.maxLvl) { Save.maxLvl++; Save.money+=200; }
+        else Save.money += 50; 
+        save();
+        setTimeout(() => startGame(Save.level+1, currentMode), 300);
+    }
+}
+
+function updateDaily(type) {
+    Save.daily.tasks.forEach(t => {
+        if(t.c) return;
+        let def = DAILY_DEFS.find(d => d.id === t.id);
+        if(def && def.stat === type) {
+            t.p++;
+            if(t.p >= def.goal) {
+                t.c = true;
+                Save.money += def.r;
+                FX.text(P.x, P.y-50, "CHALLENGE COMPLETE!");
+            }
+        }
+    });
+}
+
+function showWinMenu(time, isRecord) {
+    let m = document.getElementById('win-menu');
+    let rec = document.getElementById('win-new-record');
+    
+    rec.style.display = isRecord ? 'block' : 'none';
+    
+    let ms = Math.floor((time % 1000) / 10);
+    let s = Math.floor((time / 1000) % 60);
+    let min = Math.floor(time / 60000);
+    let tStr = (min<10?"0"+min:min) + ":" + (s<10?"0"+s:s) + ":" + (ms<10?"0"+ms:ms);
+    
+    document.getElementById('win-time-val').innerText = tStr;
+    m.style.display = 'flex';
+}
+
+function updateStreakUI() {
+    let el = document.getElementById('hud-streak');
+    if(currentStreak > 1 && currentMode !== MODE.ENDLESS) {
+        el.style.display = 'flex';
+        document.getElementById('val-streak').innerText = currentStreak;
+    } else {
+        el.style.display = 'none';
+    }
+}
+
+// --- GENERATOR ---
+function genLevel(n) {
+    setSeed((n + 1) * 7392);
+    
+    // DIFFICULTY SCALING: 0.0 to 1.0 over 300 levels
+    let progress = Math.min(1.0, n / 299); 
+    
+    let w = 60 + n*4; let h = 25;
+    let d = Array(h).fill(0).map(()=>Array(w).fill(0));
+    let o = [];
+    
+    for(let x=0; x<w; x++) { d[0][x]=1; d[h-1][x]=2; } 
+    for(let y=0; y<h; y++) { d[y][0]=1; d[y][w-1]=1; }
+    
+    let cx = 3, cy = h-5;
+    for(let i=0; i<5; i++) d[cy][i] = 1; 
+    
+    while(cx < w-5) {
+        // Platform length
+        let baseLen = 8 - Math.floor(progress * 6); 
+        let len = Math.max(2, baseLen + Math.floor(rand()*3)); 
+        
+        let dy = Math.floor(rand()*7) - 3;
+        cy += dy; cy = Math.max(5, Math.min(h-5, cy));
+        
+        // Gap size
+        let baseGap = 2 + Math.floor(progress * 5); 
+        let gap = baseGap + Math.floor(rand() * 2);
+        
+        if (n < 5) gap = Math.min(3, gap);
+        if (n < 20) gap = Math.min(4, gap);
+        
+        cx += gap;
+        for(let i=0; i<len; i++) {
+            if(cx+i < w-2) {
+                d[cy][cx+i] = 1;
+                // Spike probability
+                let spikeChance = n < 10 ? 0 : (0.1 + progress * 0.5);
+                if(rand() < spikeChance && i>0 && i<len-1) d[cy-1][cx+i] = 2; 
+                // Jump pads
+                if(rand()>0.95 && i>0) d[cy-1][cx+i] = 4; 
+                // Coin density
+                if(rand()>0.7) o.push({x:(cx+i)*CFG.TILE+20, y:(cy-2)*CFG.TILE+20}); 
+            }
+        }
+        cx += len;
+    }
+    d[cy-1][w-3]=3; d[cy][w-3]=1; 
+    return {w, h, d, o};
+}
+
+function genEndless(init) {
+    if(!init) {
+        let add = 200; map.w += add;
+        for(let y=0; y<map.h; y++) map.d[y] = map.d[y].concat(Array(add).fill(0));
+    }
+    let start = endX; let end = start + (init ? 50 : 200);
+    
+    for(let x=start; x<end; x++) {
+        map.d[0][x] = 1; map.d[map.h-1][x] = 2; 
+        
+        if(Math.random() > 0.2) { 
+            let h = Math.floor(Math.random()*15)+5;
+            map.d[h][x] = 1;
+            if(Math.random()>0.8) map.o.push({x:x*40+20, y:(h-1)*40+20});
+            if(Math.random()>0.9) map.d[h-1][x] = 2; 
+            if(Math.random()>0.98) map.d[h-1][x] = 4; 
+        }
+    }
+    endX = end;
+}
+
+// --- LOOP ---
+function startGame(n, mode) {
+    currentMode = mode;
+    paused = false;
+    document.getElementById('pause-menu').style.display = 'none';
+    document.getElementById('win-menu').style.display = 'none';
+    
+    // Setup Map
+    if(currentMode !== MODE.ENDLESS) {
+        if(n >= CFG.MAX_LEVELS) n=0; 
+        Save.level = n;
+        map = genLevel(n);
+        P.reset(80, (map.h-5)*CFG.TILE - 100);
+        document.getElementById('prog-container').style.display = 'block';
+    } else {
+        isEndless = true; endX = 0; endlessScore = 0;
+        map = {w:1000, h:25, d:Array(25).fill(0).map(()=>Array(1000).fill(0)), o:[]};
+        for(let x=0; x<20; x++) { map.d[0][x]=1; map.d[20][x]=1; } 
+        genEndless(true);
+        P.reset(100, 400);
+        document.getElementById('prog-container').style.display = 'none';
+        currentStreak = 0; // Reset streak on endless start
+    }
+    
+    startTime = Date.now();
+    parts=[]; texts=[]; state='PLAY';
+    document.getElementById('ui').style.display='block';
+    document.getElementById('menu').classList.remove('active');
+    
+    // UI Logic
+    let lvlBox = document.getElementById('hud-lvl-box');
+    let scoreBox = document.getElementById('hud-score');
+    let timerBox = document.getElementById('hud-timer');
+    
+    // Defaults
+    lvlBox.style.display = 'none';
+    scoreBox.style.display = 'none';
+    timerBox.style.display = 'none'; 
+    updateStreakUI();
+    
+    if(currentMode === MODE.NORMAL) {
+        lvlBox.style.display = 'flex';
+        document.getElementById('val-level').innerText = n+1;
+    } else if (currentMode === MODE.TIME) {
+        lvlBox.style.display = 'flex';
+        document.getElementById('val-level').innerText = n+1;
+        timerBox.style.display = 'flex'; 
+    } else if (currentMode === MODE.ENDLESS) {
+        scoreBox.style.display = 'flex';
+    }
+    
+    // GO TEXT
+    let ol = document.getElementById('start-overlay');
+    ol.style.opacity = 1;
+    ol.style.transform = "translate(-50%, -50%) scale(1)";
+    setTimeout(() => {
+        ol.style.opacity = 0;
+        ol.style.transform = "translate(-50%, -50%) scale(1.5)";
+    }, 800);
+    
+    if(!window.looping) { 
+        window.looping=true; 
+        lastTime = performance.now();
+        requestAnimationFrame(loop); 
+    }
+}
+
+function loop(timestamp) {
+    let dt = (timestamp - lastTime) / 16.666; 
+    if (dt > 2) dt = 2; 
+    lastTime = timestamp;
+    update(dt);
+    draw();
+    requestAnimationFrame(loop);
+}
+
+function checkChallenges() {
+    DB.challenges.forEach(c => {
+        if(!Save.chals.includes(c.id)) {
+            let val = Save.stats[c.stat];
+            if(val >= c.goal) {
+                Save.chals.push(c.id); Save.money += c.r;
+                document.getElementById('chal-name').innerText = c.n + " (+" + c.r + ")";
+                let pop = document.getElementById('chal-pop');
+                pop.classList.add('show');
+                setTimeout(()=>pop.classList.remove('show'), 3000);
+            }
+        }
+    });
+}
+
+function update(dt) {
+    if(state!=='PLAY' || paused) return;
+    
+    frame++;
+    
+    if(currentMode === MODE.ENDLESS) {
+        let dist = Math.floor(P.x / 100);
+        if(dist > endlessScore) {
+            endlessScore = dist;
+            document.getElementById('hud-score').innerText = dist + "m";
+            if(dist > Save.stats.maxEndless) Save.stats.maxEndless = dist;
+        }
+    } else {
+        // Update Progress Bar
+        let p = (P.x / (map.w * CFG.TILE)) * 100;
+        document.getElementById('prog-bar').style.width = Math.min(100, Math.max(0, p)) + '%';
+    }
+    
+    // Only update timer visual if in Time Trial
+    if(currentMode === MODE.TIME) {
+        let t = Date.now() - startTime;
+        let ms = Math.floor((t % 1000) / 10);
+        let s = Math.floor((t / 1000) % 60);
+        let m = Math.floor(t / 60000);
+        document.getElementById('hud-timer').innerText = 
+            (m<10?"0"+m:m) + ":" + (s<10?"0"+s:s) + ":" + (ms<10?"0"+ms:ms);
+    }
+    
+    // Physics
+    P.update(dt);
+    
+    // Cam
+    let targetX = P.x - cvs.width * 0.3;
+    let targetY = P.y - cvs.height * 0.5;
+    cam.x += (targetX - cam.x) * 0.1;
+    cam.y += (targetY - cam.y) * 0.1;
+    
+    // Bounds
+    cam.x = Math.max(0, Math.min(cam.x, map.w*CFG.TILE - cvs.width));
+    cam.y = Math.max(0, Math.min(cam.y, map.h*CFG.TILE - cvs.height));
+    
+    // Coins
+    for(let i=map.o.length-1; i>=0; i--) {
+        let o = map.o[i];
+        let dx = P.x+15 - o.x, dy = P.y+15 - o.y;
+        let dist = Math.sqrt(dx*dx + dy*dy);
+        if(dist < 30 || (Save.ups.magnet && dist < 100)) {
+            if(Save.ups.magnet && dist > 30) {
+                o.x += dx/dist * 5 * dt; o.y += dy/dist * 5 * dt;
+            } else {
+                map.o.splice(i, 1);
+                Save.money += 10; Save.stats.coins++;
+                updateDaily("coins");
+                FX.part(o.x, o.y, 5, '#ffe900');
+                FX.text(o.x, o.y - 20, "+10"); 
+            }
+        }
+    }
+    
+    if(shake>0) shake -= dt;
+    
+    checkChallenges();
+}
+
+function draw() {
+    // BG
+    bgCtx.fillStyle = '#05070a';
+    bgCtx.fillRect(0, 0, bgCvs.width, bgCvs.height);
+    bgCtx.strokeStyle = 'rgba(0, 241, 255, 0.1)';
+    bgCtx.lineWidth = 2;
+    bgCtx.beginPath();
+    let gx = -(cam.x % 100); let gy = -(cam.y % 100);
+    for(let i=0; i<bgCvs.width/100+1; i++) { bgCtx.moveTo(gx+i*100, 0); bgCtx.lineTo(gx+i*100, bgCvs.height); }
+    for(let i=0; i<bgCvs.height/100+1; i++) { bgCtx.moveTo(0, gy+i*100); bgCtx.lineTo(bgCvs.width, gy+i*100); }
+    bgCtx.stroke();
+    
+    // Game
+    ctx.clearRect(0,0,cvs.width,cvs.height);
+    ctx.save();
+    let sx = (Math.random()-0.5)*shake; let sy = (Math.random()-0.5)*shake;
+    ctx.translate(-cam.x + sx, -cam.y + sy);
+    
+    // Map
+    let minX=Math.floor(cam.x/CFG.TILE), maxX=minX+Math.floor(cvs.width/CFG.TILE)+2;
+    let minY=Math.floor(cam.y/CFG.TILE), maxY=minY+Math.floor(cvs.height/CFG.TILE)+2;
+    
+    for(let y=minY; y<=maxY; y++) {
+        for(let x=minX; x<=maxX; x++) {
+            if(y>=0&&y<map.h && x>=0&&x<map.w) {
+                let t=map.d[y][x];
+                if(t>0) {
+                    let tx = x*CFG.TILE, ty = y*CFG.TILE;
+                    if(t===1) {
+                        ctx.fillStyle = '#111'; ctx.strokeStyle='#333'; ctx.lineWidth=2;
+                        ctx.fillRect(tx, ty, CFG.TILE, CFG.TILE);
+                        ctx.strokeRect(tx, ty, CFG.TILE, CFG.TILE);
+                        ctx.fillStyle = 'rgba(0, 241, 255, 0.3)';
+                        ctx.fillRect(tx, ty, CFG.TILE, 4);
+                    }
+                    if(t===2) {
+                        ctx.fillStyle='#f05';
+                        ctx.beginPath(); ctx.moveTo(tx, ty+40); ctx.lineTo(tx+20, ty); ctx.lineTo(tx+40, ty+40); ctx.fill();
+                    }
+                    if(t===3) {
+                        ctx.fillStyle='#0f0'; ctx.globalAlpha=0.5 + Math.sin(frame/10)*0.5;
+                        ctx.fillRect(tx, ty, 40, 40); ctx.globalAlpha=1;
+                    }
+                    if(t===4) {
+                        ctx.fillStyle='#a0f'; ctx.fillRect(tx, ty+30, 40, 10);
+                    }
+                }
+            }
+        }
+    }
+    
+    // Objects
+    ctx.fillStyle = '#ffe900';
+    for(let o of map.o) {
+        ctx.beginPath(); ctx.arc(o.x, o.y, 8 + Math.sin(frame/5)*2, 0, Math.PI*2); ctx.fill();
+    }
+    
+    // Particles
+    for(let i=parts.length-1; i>=0; i--) {
+        let p = parts[i];
+        p.x += p.vx * p.dt; p.y += p.vy * p.dt; p.l -= p.dt;
+        ctx.globalAlpha = p.l/20; ctx.fillStyle = p.c;
+        ctx.fillRect(p.x, p.y, p.s, p.s);
+        if(p.l<=0) parts.splice(i, 1);
+    }
+    ctx.globalAlpha = 1;
+    
+    // Floating Texts
+    ctx.font = "bold 16px 'Rajdhani', sans-serif";
+    ctx.fillStyle = "#fff";
+    ctx.textAlign = "center";
+    for(let i=texts.length-1; i>=0; i--) {
+        let t = texts[i];
+        t.y -= 1; t.l -= 1;
+        ctx.globalAlpha = Math.min(1, t.l/20);
+        ctx.fillText(t.t, t.x, t.y);
+        if(t.l<=0) texts.splice(i, 1);
+    }
+    ctx.globalAlpha = 1;
+    
+    P.draw();
+    ctx.restore();
+    
+    document.getElementById('val-money').innerText = Save.money;
+}
+
+// FX
+var FX = {
+    part(x,y,n,c) {
+        for(let i=0; i<n; i++) parts.push({x:x, y:y, vx:(Math.random()-0.5)*10, vy:(Math.random()-0.5)*10, l:20, c:c, s:Math.random()*4+2, dt:1});
+    },
+    boom(x,y,n,c) {
+        for(let i=0; i<n; i++) parts.push({x:x, y:y, vx:(Math.random()-0.5)*20, vy:(Math.random()-0.5)*20, l:30, c:c, s:Math.random()*8+4, dt:1});
+    },
+    text(x,y,txt) {
+        texts.push({x:x, y:y, t:txt, l:40});
+    }
+};
+
+// --- MENU SYSTEM ---
+var Game = {
+    togglePause() {
+        if(state !== 'PLAY') return;
+        paused = !paused;
+        let pm = document.getElementById('pause-menu');
+        if(paused) {
+            pm.style.display = 'flex';
+            pauseTimeStart = Date.now();
+        } else {
+            pm.style.display = 'none';
+            // Adjust start time so timer doesn't run while paused
+            startTime += (Date.now() - pauseTimeStart);
+        }
+    },
+
+    menu() {
+        state = 'MENU';
+        paused = false;
+        document.getElementById('ui').style.display='none';
+        document.getElementById('pause-menu').style.display='none';
+        document.getElementById('win-menu').style.display='none';
+        let m = document.getElementById('menu');
+        m.classList.add('active');
+        this.renderMain();
+        save();
+    },
+    
+    nextLevel() {
+        if (Save.level + 1 >= CFG.MAX_LEVELS) Game.menu();
+        else startGame(Save.level + 1, currentMode);
+    },
+    
+    retryLevel() {
+        startGame(Save.level, currentMode);
+    },
+    
+    renderMain() {
+        let h = `
+            <h1>NEON <span>LEAP</span></h1>
+            <h2>ULTIMATE STATS</h2>
+            
+            <div class="mode-select">
+                <div class="mode-card" onclick="Game.renderLevels(MODE.NORMAL)">
+                    <h3>ADVENTURE</h3>
+                    <p>Relaxed pace. No visible timer.</p>
+                </div>
+                <div class="mode-card" onclick="Game.renderLevels(MODE.TIME)">
+                    <h3>TIME TRIAL</h3>
+                    <p>Race against the clock. Set Records.</p>
+                </div>
+                <div class="mode-card" onclick="startGame(0, MODE.ENDLESS)">
+                    <h3>ENDLESS</h3>
+                    <p>One life. Infinite distance.</p>
+                </div>
+            </div>
+
+            <button class="btn btn-primary" onclick="Game.renderStats()">PROFILE & STATS</button>
+            <button class="btn btn-rare" onclick="Game.renderShop()">SHOP</button>
+            <button class="btn" onclick="Game.renderChal()">CHALLENGES</button>
+        `;
+        document.getElementById('menu-content').innerHTML = h;
+    },
+
+    renderLevels(targetMode) {
+        let h = `<h2>SELECT LEVEL (${targetMode === MODE.TIME ? "TIME TRIAL" : "ADVENTURE"})</h2><div class="level-grid">`;
+        for(let i=0; i<CFG.MAX_LEVELS; i++) {
+            let u = i <= Save.maxLvl;
+            let c = i < Save.maxLvl ? 'completed' : '';
+            let t = "";
+            
+            // Show time if in Time Trial Mode and we have a record
+            if(targetMode === MODE.TIME && Save.times[i]) {
+                let ms = Save.times[i];
+                t = `<div class="lvl-time">${(ms/1000).toFixed(2)}s</div>`;
+            } else if (targetMode === MODE.TIME && u) {
+                t = `<div class="lvl-time">--:--</div>`;
+            }
+
+            let cl = u ? `unlocked ${c}` : '';
+            let clk = u ? `onclick="startGame(${i}, ${targetMode})"` : '';
+            h += `<div class="lvl-btn ${cl}" ${clk}><div class="lvl-num">${i+1}</div>${t}</div>`;
+        }
+        h += `</div><button class="btn" onclick="Game.renderMain()">BACK</button>`;
+        document.getElementById('menu-content').innerHTML = h;
+    },
+    
+    renderStats() {
+        let s = Save.stats;
+        let totalTime = 0;
+        Object.values(Save.times).forEach(v => totalTime += v);
+        let timeFormatted = (totalTime/1000).toFixed(1) + "s";
+        
+        // Generate Records List
+        let recs = "";
+        let count = 0;
+        for(let i=0; i<CFG.MAX_LEVELS; i++) {
+            if(Save.times[i]) {
+                recs += `<div class="record-item"><span>LEVEL ${i+1}</span> <span>${(Save.times[i]/1000).toFixed(3)}s</span></div>`;
+                count++;
+            }
+        }
+        if(count===0) recs = "<div style='color:#666; font-style:italic;'>No Time Trial records set yet.</div>";
+
+        let h = `
+            <div class="stats-container">
+                <div class="stats-header">
+                    <h2>PLAYER PROFILE</h2>
+                    <h3 style="color:var(--c-primary)">RANK: ${Save.maxLvl > 50 ? 'S' : (Save.maxLvl > 20 ? 'A' : 'B')}</h3>
+                </div>
+                
+                <div class="stats-grid">
+                    <div class="stat-card highlight">
+                        <div class="stat-val">${Save.maxLvl} / ${CFG.MAX_LEVELS}</div>
+                        <div class="stat-label">Levels Cleared</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-val">${s.distance.toFixed(0)}m</div>
+                        <div class="stat-label">Distance Run</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-val" style="color:var(--c-danger)">${s.deaths}</div>
+                        <div class="stat-label">Total Deaths</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-val" style="color:var(--c-accent)">${s.coins}</div>
+                        <div class="stat-label">Coins Collected</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-val">${s.maxEndless}m</div>
+                        <div class="stat-label">Best Endless Run</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-val">${timeFormatted}</div>
+                        <div class="stat-label">Total Speedrun Time</div>
+                    </div>
+                </div>
+
+                <h3>TIME TRIAL RECORDS</h3>
+                <div class="records-list">${recs}</div>
+            </div>
+            <br>
+            <button class="btn" onclick="Game.renderMain()">BACK</button>
+        `;
+        document.getElementById('menu-content').innerHTML = h;
+    },
+    
+    renderShop() {
+        let h = `
+        <div class="shop-container">
+            <div class="shop-nav">
+                <button class="shop-tab active" id="tab-skin" onclick="Game.switchShop('skin')">SKINS</button>
+                <button class="shop-tab" id="tab-up" onclick="Game.switchShop('up')">UPGRADES</button>
+            </div>
+            <div class="coupon-area">
+                <input type="text" id="coupon-in" class="coupon-input" placeholder="ENTER CODE">
+                <button class="coupon-btn" onclick="Game.redeemCode()">REDEEM</button>
+            </div>
+            <div class="shop-grid" id="shop-grid"></div>
+        </div>
+        <button class="btn" onclick="Game.renderMain()">BACK</button>`;
+        document.getElementById('menu-content').innerHTML = h;
+        
+        // Reset scroll position to top
+        document.getElementById('menu-content').scrollTop = 0;
+        
+        this.switchShop('skin');
+    },
+    
+    redeemCode() {
+        let code = document.getElementById('coupon-in').value.toUpperCase().trim();
+        let valid = {
+            "NEON2024": 1000,
+            "START": 500,
+            "SPEED": 300,
+            "JUMP": 300,
+            "LD_15": 1000000000
+        };
+        
+        if(Save.codes.includes(code)) { alert("Code already used!"); return; }
+        
+        if(valid[code]) {
+            Save.codes.push(code);
+            Save.money += valid[code];
+            let msg = valid[code] > 100000 ? "UNLIMITED POWER!" : valid[code] + " Coins!";
+            alert("Redeemed: " + msg);
+            save();
+            document.getElementById('val-money').innerText = Save.money;
+            Game.renderShop(); // Refresh to update buy buttons if affordable
+        } else {
+            alert("Invalid Code");
+        }
+    },
+    
+    switchShop(type) {
+        document.querySelectorAll('.shop-tab').forEach(e=>e.classList.remove('active'));
+        document.getElementById('tab-'+type).classList.add('active');
+        
+        let g = document.getElementById('shop-grid');
+        let h = "";
+        
+        if(type==='skin') {
+            DB.skins.forEach((s, i) => {
+                let owned = Save.skins.includes(i);
+                let sel = Save.skin === i;
+                let btn = owned 
+                    ? (sel ? '<button class="card-btn">EQUIPPED</button>' : `<button class="card-btn" onclick="Game.buySkin(${i})">EQUIP</button>`)
+                    : `<button class="card-btn buy" onclick="Game.buySkin(${i})">BUY ${s.p}</button>`;
+                
+                h += `
+                <div class="shop-card ${owned?'owned':''} ${sel?'selected':''}">
+                    <div class="card-preview" style="background:${s.c}; border:${s.b?'2px solid '+s.b:'none'}; box-shadow:${s.glow?'0 0 15px '+s.c:'none'}">
+                        ${s.eye ? '<div style="width:4px;height:4px;background:#000;margin:0 2px"></div><div style="width:4px;height:4px;background:#000;margin:0 2px"></div>' : ''}
+                    </div>
+                    <div style="font-weight:bold; color:#fff">${s.n}</div>
+                    ${btn}
+                </div>`;
+            });
+        } else {
+            DB.upgrades.forEach(u => {
+                let owned = Save.ups[u.id];
+                let btn = owned 
+                    ? '<button class="card-btn">OWNED</button>'
+                    : `<button class="card-btn buy" onclick="Game.buyUp('${u.id}')">BUY ${u.p}</button>`;
+                    
+                h += `
+                <div class="shop-card ${owned?'owned':''}">
+                    <div class="card-preview" style="color:#fff; background:#222;">${u.ic || '★'}</div>
+                    <div style="font-weight:bold; color:#fff">${u.n}</div>
+                    <div style="font-size:0.8rem; color:#888; margin-top:5px">${u.d}</div>
+                    ${btn}
+                </div>`;
+            });
+        }
+        g.innerHTML = h;
+    },
+    
+    buySkin(id) {
+        if(Save.skins.includes(id)) { Save.skin=id; this.switchShop('skin'); return; }
+        let s = DB.skins[id];
+        if(Save.money >= s.p) {
+            Save.money -= s.p; Save.skins.push(id); Save.skin = id;
+            this.switchShop('skin'); save();
+        }
+    },
+    
+    buyUp(id) {
+        if(Save.ups[id]) return;
+        let u = DB.upgrades.find(x=>x.id===id);
+        if(Save.money >= u.p) {
+            Save.money -= u.p; Save.ups[id] = true;
+            this.switchShop('up'); save();
+        }
+    },
+
+    renderChal() {
+        // Countdown
+        let now = new Date();
+        let end = new Date(); end.setHours(24,0,0,0);
+        let diff = end - now;
+        let hLeft = Math.floor(diff/3600000);
+        let mLeft = Math.floor((diff%3600000)/60000);
+        
+        let dailyHTML = "";
+        
+        Save.daily.tasks.forEach(task => {
+            let def = DAILY_DEFS.find(d => d.id === task.id);
+            if(def) {
+                let dProg = Math.min(100, (task.p / def.goal) * 100);
+                let dDone = task.c;
+                
+                dailyHTML += `
+                <div class="chal-item" style="border-color:${dDone?'var(--c-accent)':'var(--c-primary)'}">
+                    <div style="position:absolute; bottom:0; left:0; height:3px; background:${dDone?'var(--c-accent)':'var(--c-primary)'}; width:${dProg}%"></div>
+                    <div style="z-index:2; position:relative; display:flex; justify-content:space-between; width:100%">
+                        <div style="text-align:left">
+                            <div style="color:${dDone?'var(--c-accent)':'#fff'}; font-weight:bold">DAILY: ${def.n}</div>
+                            <div style="color:#aaa; font-size:0.8rem">${def.d}</div>
+                        </div>
+                        <div style="text-align:right">
+                             <div style="font-weight:bold; color:${dDone?'var(--c-accent)':'#fff'}">${dDone ? 'CLAIMED' : dProg.toFixed(0)+'%'}</div>
+                             <div style="font-size:0.8rem; color:var(--c-accent)">Reward: ${def.r}</div>
+                        </div>
+                    </div>
+                </div>`;
+            }
+        });
+
+        let h = `<h2>CHALLENGES</h2>
+        <div style="color:var(--c-primary); margin-bottom:15px; font-weight:bold">DAILY RESET IN ${hLeft}H ${mLeft}M</div>
+        <div style='width:100%; max-width:800px; display:flex; flex-direction:column; gap:10px'>
+            ${dailyHTML}
+        `;
+        
+        DB.challenges.forEach(c => {
+            let done = Save.chals.includes(c.id);
+            let prog = Math.min(100, (Save.stats[c.stat] / c.goal) * 100);
+            h += `
+            <div class="chal-item" style="background:#111; padding:15px; border:1px solid ${done?'var(--c-accent)':'#333'}; position:relative; overflow:hidden;">
+                <div style="position:absolute; bottom:0; left:0; height:3px; background:var(--c-primary); width:${prog}%"></div>
+                <div style="z-index:2; position:relative; display:flex; justify-content:space-between; width:100%">
+                    <div style="text-align:left">
+                        <div style="color:${done?'var(--c-accent)':'#fff'}; font-weight:bold">${c.n}</div>
+                        <div style="color:#666; font-size:0.8rem">${c.d}</div>
+                    </div>
+                    <div style="text-align:right">
+                         <div style="font-weight:bold; color:${done?'var(--c-accent)':'#fff'}">${done ? 'COMPLETED' : prog.toFixed(0)+'%'}</div>
+                         <div style="font-size:0.8rem; color:var(--c-accent)">Reward: ${c.r}</div>
+                    </div>
+                </div>
+            </div>`;
+        });
+        h += '</div><br><button class="btn" onclick="Game.renderMain()">BACK</button>';
+        document.getElementById('menu-content').innerHTML = h;
+    }
+};
+
+// Initial Start
+In.init();
+const fit = () => { cvs.width=bgCvs.width=window.innerWidth; cvs.height=bgCvs.height=window.innerHeight; };
+window.addEventListener('resize', fit);
+fit();
+Game.menu();
+</script>
+</body>
+</html>
