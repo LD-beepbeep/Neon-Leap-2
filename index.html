@@ -252,8 +252,8 @@
         <div class="win-title">LEVEL COMPLETE</div>
         <div id="win-time-val" class="win-time">00:00</div>
         <div style="display:flex; gap:10px;">
-            <button class="btn btn-rare" onclick="Game.retryLevel()">RETRY</button>
-            <button class="btn btn-primary" onclick="Game.nextLevel()">NEXT LEVEL</button>
+            <button class="btn btn-rare" onclick="Game.retryLevel()">RETRY (R)</button>
+            <button class="btn btn-primary" onclick="Game.nextLevel()">NEXT LEVEL (S)</button>
         </div>
         <button class="btn" style="margin-top:0; min-width:auto; padding:15px 30px" onclick="Game.menu()">MENU</button>
     </div>
@@ -311,6 +311,7 @@ var DB = {
         {id:"magnet", n:"Coin Magnet", d:"Attracts coins", p:4000, passive:true},
         {id:"climb", n:"Wall Climb", d:"Climb walls", p:5000, passive:true},
         {id:"stomp", n:"Super Stomp", d:"Down to smash", p:7000, passive:true},
+        {id:"chrono", n:"Chrono Shift", d:"Press C to slow time", p:25000, active:true},
         {id:"sonic", n:"Sonic Boom", d:"Speed destroys enemies", p:18000, passive:true},
         {id:"glider", n:"Glider", d:"Hold Jump to glide", p:15000, passive:true}
     ],
@@ -404,6 +405,11 @@ var In = { k:{}, prevK:{}, init(){
         if(e.code === 'KeyR' && state === 'PLAY' && !paused) {
              die();
         }
+        // Shortcuts for Win Menu
+        if(state === 'WIN') {
+            if(e.code === 'KeyR') Game.retryLevel();
+            if(e.code === 'KeyS') Game.nextLevel();
+        }
     });
     window.addEventListener('keyup', e => In.k[e.code]=false);
     
@@ -423,18 +429,44 @@ var P = {
     ground:false, wall:0, jumps:0,
     dead:false, dTime:0, dCool:0,
     shield:false, coyote:0, buffer:0, invincible:0,
+    chronoActive: false, chronoTimer: 0, chronoCooldown: 0,
     
     reset(x,y) {
         this.x=x; this.y=y; this.vx=0; this.vy=0;
         this.dead=false; this.dTime=0; this.invincible=0;
         this.jumps = Save.ups.double ? 1 : 0;
+        this.chronoActive = false; this.chronoTimer = 0; this.chronoCooldown = 0;
     },
     
     update(dt) {
         if(this.dead) return;
         
+        let timeScale = 1.0;
+        
+        // CHRONO SHIFT LOGIC
+        if(Save.ups.chrono) {
+            let cKey = In.k['KeyC'];
+            if(cKey && this.chronoCooldown <= 0 && !this.chronoActive) {
+                this.chronoActive = true;
+                this.chronoTimer = 180; // 3 seconds at 60fps
+                this.chronoCooldown = 600; // 10 seconds cooldown
+                FX.boom(this.x, this.y, 20, '#00f1ff');
+            }
+            
+            if(this.chronoActive) {
+                timeScale = 0.4; // Slow motion
+                this.chronoTimer -= 1; // Real time decrement not scaled
+                if(this.chronoTimer % 5 === 0) FX.part(this.x+15, this.y+15, 1, '#00f1ff');
+                if(this.chronoTimer <= 0) this.chronoActive = false;
+            }
+            
+            if(this.chronoCooldown > 0) this.chronoCooldown -= 1; // Cooldown ticks in real time
+        }
+        
+        let scaledDt = dt * timeScale;
+        
         // Stats
-        if(Math.abs(this.vx) > 0.1) Save.stats.distance += (Math.abs(this.vx) * dt) / 100;
+        if(Math.abs(this.vx) > 0.1) Save.stats.distance += (Math.abs(this.vx) * scaledDt) / 100;
 
         let l = In.k['ArrowLeft']||In.k['KeyA'];
         let r = In.k['ArrowRight']||In.k['KeyD'];
@@ -443,8 +475,8 @@ var P = {
         let s = In.k['ArrowDown']||In.k['KeyS']; 
         
         // Dash
-        if(this.dCool>0) this.dCool -= dt;
-        if(this.invincible>0) this.invincible -= dt;
+        if(this.dCool>0) this.dCool -= scaledDt;
+        if(this.invincible>0) this.invincible -= scaledDt;
         
         if(d && this.dCool<=0 && Save.ups.dash) {
             this.dTime=10; this.dCool=45; this.invincible=15;
@@ -456,18 +488,18 @@ var P = {
         }
         
         if(this.dTime>0) {
-            this.dTime -= dt; this.x += this.vx * dt;
+            this.dTime -= scaledDt; this.x += this.vx * scaledDt;
             if(this.dTime<=0) this.vx *= 0.5;
             col(true); return;
         }
 
         // Horizontal Movement
-        let acc = CFG.ACC * dt;
+        let acc = CFG.ACC * scaledDt;
         if(l) this.vx -= acc;
         if(r) this.vx += acc;
         
         let fric = this.ground ? CFG.FRIC : CFG.AIR_FRIC;
-        if(!l && !r) this.vx *= Math.pow(fric, dt);
+        if(!l && !r) this.vx *= Math.pow(fric, scaledDt);
         
         let maxS = CFG.MAX_S;
         this.vx = Math.max(-maxS, Math.min(maxS, this.vx));
@@ -487,21 +519,21 @@ var P = {
         
         if(!climbing) {
             if(Save.ups.glider && j && this.vy > 0) {
-                this.vy += CFG.G * 0.3 * dt; // Increased gravity for glider nerf
+                this.vy += CFG.G * 0.3 * scaledDt; // Increased gravity for glider nerf
                 if(this.vy > 4) this.vy = 4; // Higher terminal velocity for nerf
                 if(frame%5==0) FX.part(this.x+15, this.y+30, 1, '#fff');
             } 
             else if(Save.ups.stomp && s && !this.ground) {
-                this.vy += 2 * dt; FX.part(this.x+15, this.y, 1, '#ff0055');
+                this.vy += 2 * scaledDt; FX.part(this.x+15, this.y, 1, '#ff0055');
             }
-            else { this.vy += CFG.G * dt; }
+            else { this.vy += CFG.G * scaledDt; }
             if(this.vy > CFG.MAX_G) this.vy = CFG.MAX_G; 
             if(this.wall !== 0 && this.vy > 0) this.vy = Math.min(this.vy, CFG.WALL_SLIDE); 
         }
         
         // Jump
-        if(this.coyote > 0) this.coyote -= dt;
-        if(this.buffer > 0) this.buffer -= dt;
+        if(this.coyote > 0) this.coyote -= scaledDt;
+        if(this.buffer > 0) this.buffer -= scaledDt;
         
         if(j && !In.prevK['ArrowUp'] && !In.prevK['Space'] && !In.prevK['KeyW']) this.buffer = CFG.BUFFER;
         
@@ -527,8 +559,8 @@ var P = {
         
         if(!j && this.vy < -5) this.vy *= 0.6;
 
-        this.x += this.vx * dt; col(true);
-        this.y += this.vy * dt; col(false);
+        this.x += this.vx * scaledDt; col(true);
+        this.y += this.vy * scaledDt; col(false);
         
         if(this.ground) {
             this.coyote = CFG.COYOTE;
@@ -555,6 +587,7 @@ var P = {
         }
         
         ctx.fillStyle = this.invincible > 0 ? '#fff' : s.c;
+        if(this.chronoActive) ctx.fillStyle = '#fff'; // Flash white in chrono
         if(s.glow) { ctx.shadowBlur=20; ctx.shadowColor=s.c; }
         
         let sx=0, sy=0;
@@ -675,6 +708,11 @@ function win() {
     
     let duration = Date.now() - startTime;
     
+    // Shared Unlock Logic
+    if(Save.level >= Save.maxLvl) { Save.maxLvl++; Save.money+=200; }
+    else Save.money += 50; 
+    save();
+    
     // Time Trial Special Logic
     if(currentMode === MODE.TIME) {
         let isRecord = false;
@@ -685,10 +723,6 @@ function win() {
         save();
         showWinMenu(duration, isRecord);
     } else {
-        // Unlock next level in Normal
-        if(Save.level >= Save.maxLvl) { Save.maxLvl++; Save.money+=200; }
-        else Save.money += 50; 
-        save();
         setTimeout(() => startGame(Save.level+1, currentMode), 300);
     }
 }
@@ -1040,6 +1074,12 @@ function draw() {
     }
     ctx.globalAlpha = 1;
     
+    // Chrono Visuals
+    if(P.chronoActive) {
+        ctx.fillStyle = "rgba(0, 241, 255, 0.1)";
+        ctx.fillRect(cam.x-100, cam.y-100, cvs.width+200, cvs.height+200);
+    }
+
     P.draw();
     ctx.restore();
     
