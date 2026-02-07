@@ -14,6 +14,7 @@
     --c-danger: #ff0055;
     --c-rare: #a020f0;
     --c-fire: #ff6600;
+    --c-skip: #888888;
     --font-main: 'Rajdhani', sans-serif;
   }
 
@@ -28,7 +29,8 @@
   
   .hud-top {
       position: absolute; top: 0; left: 0; width: 100%; padding: 20px;
-      display: flex; justify-content: space-between; align-items: flex-start; box-sizing: border-box;
+      /* Removed flex-justify logic as we position absolutely now for cleaner layout */
+      pointer-events: none;
   }
 
   .hud-widget {
@@ -41,14 +43,21 @@
       display: flex; align-items: center; gap: 15px;
       box-shadow: 0 5px 20px rgba(0,0,0,0.4);
       transform: skewX(-10deg);
+      pointer-events: auto;
   }
   .hud-widget span { transform: skewX(10deg); display:inline-block; }
   
-  .hud-money { border-left: 4px solid var(--c-accent); color: var(--c-accent); }
-  .hud-level { border-right: 4px solid var(--c-primary); color: var(--c-primary); flex-direction: row-reverse; }
+  .hud-money { display: none; } /* Hidden during gameplay */
   
+  /* LEVEL TOP LEFT */
+  .hud-level { 
+      position: absolute; top: 20px; left: 20px;
+      border-left: 4px solid var(--c-primary); color: var(--c-primary); 
+  }
+  
+  /* STREAK BELOW LEVEL */
   .hud-streak { 
-      position: absolute; top: 90px; left: 20px;
+      position: absolute; top: 80px; left: 20px;
       border-bottom: 4px solid var(--c-fire); color: var(--c-fire); 
       display: none; 
   } 
@@ -71,15 +80,35 @@
       box-shadow: 0 0 10px var(--c-primary); transition: width 0.1s linear;
   }
 
+  /* Pause Button - Top Right */
   .hud-pause {
       pointer-events: auto; cursor: pointer;
       background: rgba(0,0,0,0.5); border: 2px solid rgba(255,255,255,0.2);
       width: 40px; height: 40px; border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
       color: #fff; font-weight:bold; transition: 0.2s;
-      position: absolute; right: 20px; top: 80px; 
+      position: absolute; right: 20px; top: 20px; /* Top Right Corner */
   }
   .hud-pause:hover { border-color: var(--c-primary); color: var(--c-primary); background: #fff; }
+
+  /* SKIP LEVEL BUTTON */
+  #hud-skip {
+      pointer-events: auto;
+      position: absolute; bottom: 40px; right: 20px;
+      background: rgba(255, 0, 85, 0.2); 
+      border: 2px solid var(--c-danger);
+      color: #fff; padding: 15px 30px; 
+      font-weight: 800; cursor: pointer;
+      border-radius: 4px; display: none; 
+      animation: pulseBtn 2s infinite;
+      backdrop-filter: blur(5px);
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      font-size: 1.2rem;
+      box-shadow: 0 0 20px rgba(255, 0, 85, 0.4);
+  }
+  #hud-skip:hover { background: var(--c-danger); transform: scale(1.05); }
+  @keyframes pulseBtn { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
 
   .hud-abilities { display: none !important; }
 
@@ -99,13 +128,15 @@
   }
   
   .win-title { font-size: 3rem; color: #fff; font-weight: 900; font-style: italic; text-transform: uppercase; margin-bottom: 10px; }
+  .win-subtitle { font-size: 1.5rem; color: #888; font-weight: bold; margin-bottom: 20px; letter-spacing: 2px; }
   .win-time { font-size: 5rem; color: var(--c-primary); font-family: monospace; font-weight: bold; margin-bottom: 20px; text-shadow: 0 0 30px var(--c-primary); }
   .new-record-anim { animation: pulseRecord 0.5s infinite alternate; color: var(--c-accent); font-size: 2rem; font-weight: bold; margin-bottom: 20px; letter-spacing: 5px; }
   
   @keyframes pulseRecord { from { transform: scale(1); text-shadow: 0 0 10px var(--c-accent); } to { transform: scale(1.2); text-shadow: 0 0 30px var(--c-accent); } }
 
   .chal-pop {
-      position: absolute; top: 100px; right: -300px; background: rgba(0,0,0,0.9);
+      position: absolute; top: 150px; right: -300px;
+      background: rgba(0,0,0,0.9);
       border: 1px solid var(--c-accent); padding: 15px 25px; color: #fff;
       display: flex; align-items: center; gap: 15px; z-index: 50; transition: right 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
       border-radius: 8px 0 0 8px; box-shadow: -5px 5px 20px rgba(0,0,0,0.5);
@@ -114,6 +145,27 @@
   .chal-icon { font-size: 2rem; }
   .chal-info div:first-child { color: var(--c-accent); font-weight: bold; font-size: 0.8rem; letter-spacing: 1px; }
   .chal-info div:last-child { font-weight: bold; font-size: 1.1rem; }
+
+  /* UI Cards for Challenges */
+  .chal-card {
+      background: linear-gradient(135deg, #151922, #0d1015);
+      border: 1px solid #333; border-radius: 12px; padding: 20px;
+      display: flex; align-items: center; justify-content: space-between;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.4); position: relative; overflow: hidden;
+      margin-bottom: 15px; transition: transform 0.2s;
+  }
+  .chal-card:hover { transform: translateY(-2px); border-color: #555; }
+  .chal-card.done { border-color: var(--c-accent); background: linear-gradient(135deg, rgba(255, 233, 0, 0.05), #0d1015); }
+  .chal-progress-bg { position: absolute; bottom: 0; left: 0; width: 100%; height: 4px; background: rgba(255,255,255,0.1); }
+  .chal-progress-fill { height: 100%; background: var(--c-primary); transition: width 0.5s; }
+  .chal-card.done .chal-progress-fill { background: var(--c-accent); }
+  .chal-icon-box { font-size: 2.5rem; margin-right: 20px; min-width: 60px; text-align: center; }
+  .chal-text { text-align: left; flex: 1; }
+  .chal-title { font-weight: 800; font-size: 1.4rem; margin-bottom: 4px; color: #fff; text-transform: uppercase; font-style: italic; }
+  .chal-desc { color: #888; font-size: 0.9rem; }
+  .chal-meta { text-align: right; min-width: 120px; }
+  .chal-status { font-weight: bold; font-size: 1.2rem; color: #fff; }
+  .chal-reward { color: var(--c-accent); font-weight: bold; font-size: 1rem; margin-top: 5px; }
 
   .menu-screen {
       position: absolute; top:0; left:0; width:100%; height:100%; 
@@ -204,6 +256,12 @@
   .lvl-btn.unlocked { color: #fff; border-color: var(--c-primary); cursor: pointer; background: rgba(0, 241, 255, 0.1); }
   .lvl-btn.unlocked:hover { background: var(--c-primary); color: #000; transform: scale(1.1); }
   .lvl-btn.completed { border-color: var(--c-accent); color: var(--c-accent); background: rgba(255, 233, 0, 0.1); }
+  
+  /* SKIPPED LEVEL STYLE */
+  .lvl-btn.skipped { border-color: var(--c-skip); color: var(--c-skip); background: rgba(255, 255, 255, 0.05); }
+  .lvl-btn.skipped .lvl-time { color: #666; }
+
+  
 
   #mobile { display:none; position:absolute; bottom:0; left:0; width:100%; height:100%; z-index:50; pointer-events:none; }
   .t-btn { pointer-events:auto; position:absolute; width:75px; height:75px; border:2px solid rgba(255,255,255,0.1); border-radius:50%; display:flex; align-items:center; justify-content:center; color:rgba(255,255,255,0.6); font-size:30px; backdrop-filter:blur(5px); transition: 0.1s; }
@@ -237,12 +295,16 @@
     
     <div class="hud-pause" onclick="Game.togglePause()">||</div>
     
+    <!-- SKIP BUTTON -->
+    <div id="hud-skip" onclick="Game.skipLevel()">SKIP LEVEL &gt;&gt;</div>
+    
     <div id="start-overlay">GO!</div>
     
     <!-- Pause Menu Overlay -->
     <div id="pause-menu" class="overlay-menu" style="display:none;">
         <h2 style="color:#fff; font-size:4rem; margin-bottom:40px; text-shadow:0 0 20px var(--c-primary)">PAUSED</h2>
         <button class="btn btn-primary" onclick="Game.togglePause()">RESUME</button>
+        <button class="btn btn-rare" onclick="Game.retryLevel(); Game.togglePause();">RETRY</button>
         <button class="btn btn-danger" onclick="Game.menu()">EXIT TO MENU</button>
     </div>
 
@@ -250,6 +312,7 @@
     <div id="win-menu" class="overlay-menu" style="display:none;">
         <div id="win-new-record" class="new-record-anim" style="display:none;">NEW RECORD!</div>
         <div class="win-title">LEVEL COMPLETE</div>
+        <div id="win-level-num" class="win-subtitle">LEVEL 1</div>
         <div id="win-time-val" class="win-time">00:00</div>
         <div style="display:flex; gap:10px;">
             <button class="btn btn-rare" onclick="Game.retryLevel()">RETRY (R)</button>
@@ -316,12 +379,12 @@ var DB = {
         {id:"glider", n:"Glider", d:"Hold Jump to glide", p:15000, passive:true}
     ],
     challenges: [
-        {id:"jump1k", n:"Bunny Hopper", d:"Jump 1000 times", goal:1000, stat:"jumps", r:500},
-        {id:"run10k", n:"Marathon Runner", d:"Run 10,000m total", goal:10000, stat:"distance", r:1000},
-        {id:"coin500", n:"Treasure Hunter", d:"Collect 500 coins", goal:500, stat:"coins", r:2000},
-        {id:"death50", n:"Determination", d:"Die 50 times", goal:50, stat:"deaths", r:1000},
-        {id:"endless500", n:"Survivor", d:"Reach 500m in Endless", goal:500, stat:"maxEndless", r:3000},
-        {id:"levels20", n:"Explorer", d:"Unlock 20 levels", goal:20, stat:"unlocked", r:5000}
+        {id:"jump1k", n:"Bunny Hopper", d:"Jump 1000 times", goal:1000, stat:"jumps", r:500, ic:"🐇"},
+        {id:"run10k", n:"Marathon Runner", d:"Run 10,000m total", goal:10000, stat:"distance", r:1000, ic:"🏃"},
+        {id:"coin500", n:"Treasure Hunter", d:"Collect 500 coins", goal:500, stat:"coins", r:2000, ic:"💰"},
+        {id:"death50", n:"Determination", d:"Die 50 times", goal:50, stat:"deaths", r:1000, ic:"💀"},
+        {id:"endless500", n:"Survivor", d:"Reach 500m in Endless", goal:500, stat:"maxEndless", r:3000, ic:"🛡️"},
+        {id:"levels20", n:"Explorer", d:"Unlock 20 levels", goal:20, stat:"unlocked", r:5000, ic:"🗺️"}
     ]
 };
 
@@ -331,6 +394,7 @@ var Save = {
     chals:[],
     times:{}, 
     codes:[],
+    skipped:[],
     daily: { date: "", tasks: [] }
 };
 
@@ -342,7 +406,8 @@ try {
         if(!Save.stats) Save.stats = {jumps:0, distance:0, deaths:0, coins:0, maxEndless:0, unlocked:1};
         if(!Save.times) Save.times = {};
         if(!Save.codes) Save.codes = [];
-        if(!Save.daily || Array.isArray(Save.daily)) Save.daily = { date: "", tasks: [] }; // Reset/Migrate old structure
+        if(!Save.skipped) Save.skipped = [];
+        if(!Save.daily || Array.isArray(Save.daily)) Save.daily = { date: "", tasks: [] }; 
     }
 } catch(e){}
 const save = () => {
@@ -351,11 +416,11 @@ const save = () => {
 };
 
 const DAILY_DEFS = [
-    { id: 0, n: "Coin Collector", d: "Collect 50 coins today", goal: 50, r: 500, stat: "coins" },
-    { id: 1, n: "Level Master", d: "Complete 5 levels today", goal: 5, r: 800, stat: "levels" },
-    { id: 2, n: "Death Defier", d: "Die 10 times today", goal: 10, r: 300, stat: "deaths" },
-    { id: 3, n: "Speed Demon", d: "Dash 20 times today", goal: 20, r: 400, stat: "dashes" },
-    { id: 4, n: "High Jumper", d: "Jump 100 times today", goal: 100, r: 400, stat: "jumps" }
+    { id: 0, n: "Coin Collector", d: "Collect 50 coins today", goal: 50, r: 500, stat: "coins", ic: "🪙" },
+    { id: 1, n: "Level Master", d: "Complete 5 levels today", goal: 5, r: 800, stat: "levels", ic: "🏆" },
+    { id: 2, n: "Death Defier", d: "Die 10 times today", goal: 10, r: 300, stat: "deaths", ic: "💀" },
+    { id: 3, n: "Speed Demon", d: "Dash 20 times today", goal: 20, r: 400, stat: "dashes", ic: "⚡" },
+    { id: 4, n: "High Jumper", d: "Jump 100 times today", goal: 100, r: 400, stat: "jumps", ic: "🐇" }
 ];
 
 // Check Daily
@@ -383,19 +448,19 @@ var bgCtx = bgCvs.getContext('2d');
 var MODE = { NORMAL: 0, TIME: 1, ENDLESS: 2 };
 var currentMode = MODE.NORMAL;
 var state = 'MENU';
-var paused = false; // Pause state
+var paused = false; 
 var cam = {x:0, y:0};
 var map = {w:0, h:0, d:[], o:[]}; 
 var parts = [];
-var texts = []; // Floating texts
+var texts = []; 
 var shake = 0;
 var frame = 0;
 var lastTime = 0;
 var endX = 0;
 var endlessScore = 0;
-var startTime = 0;
-var pauseTimeStart = 0; // To adjust timer
-var currentStreak = 0; // Win streak
+var gameTimer = 0; 
+var currentStreak = 0; 
+var deathsInLevel = 0;
 
 // Input System
 var In = { k:{}, prevK:{}, init(){
@@ -410,6 +475,8 @@ var In = { k:{}, prevK:{}, init(){
             if(e.code === 'KeyR') Game.retryLevel();
             if(e.code === 'KeyS') Game.nextLevel();
         }
+        // Escape for Pause
+        if(e.code === 'Escape') Game.togglePause();
     });
     window.addEventListener('keyup', e => In.k[e.code]=false);
     
@@ -455,12 +522,12 @@ var P = {
             
             if(this.chronoActive) {
                 timeScale = 0.4; // Slow motion
-                this.chronoTimer -= 1; // Real time decrement not scaled
+                this.chronoTimer -= 1; 
                 if(this.chronoTimer % 5 === 0) FX.part(this.x+15, this.y+15, 1, '#00f1ff');
                 if(this.chronoTimer <= 0) this.chronoActive = false;
             }
             
-            if(this.chronoCooldown > 0) this.chronoCooldown -= 1; // Cooldown ticks in real time
+            if(this.chronoCooldown > 0) this.chronoCooldown -= 1; 
         }
         
         let scaledDt = dt * timeScale;
@@ -519,8 +586,8 @@ var P = {
         
         if(!climbing) {
             if(Save.ups.glider && j && this.vy > 0) {
-                this.vy += CFG.G * 0.3 * scaledDt; // Increased gravity for glider nerf
-                if(this.vy > 4) this.vy = 4; // Higher terminal velocity for nerf
+                this.vy += CFG.G * 0.3 * scaledDt; 
+                if(this.vy > 4) this.vy = 4; 
                 if(frame%5==0) FX.part(this.x+15, this.y+30, 1, '#fff');
             } 
             else if(Save.ups.stomp && s && !this.ground) {
@@ -587,7 +654,7 @@ var P = {
         }
         
         ctx.fillStyle = this.invincible > 0 ? '#fff' : s.c;
-        if(this.chronoActive) ctx.fillStyle = '#fff'; // Flash white in chrono
+        if(this.chronoActive) ctx.fillStyle = '#fff'; 
         if(s.glow) { ctx.shadowBlur=20; ctx.shadowColor=s.c; }
         
         let sx=0, sy=0;
@@ -607,6 +674,7 @@ var P = {
         this.drawEyes(sx, sy);
         ctx.restore();
         ctx.shadowBlur=0;
+        
     },
     
     drawEyes(sx, sy) {
@@ -675,8 +743,7 @@ function col(axisX) {
     let tx = Math.floor(cx/CFG.TILE), ty = Math.floor(cy/CFG.TILE);
     if(ty>=0 && ty<map.h && tx>=0 && tx<map.w) {
         let t = map.d[ty][tx];
-        if(t===2) { // Spike
-            if(P.invincible>0) return;
+        if(t===2) { // Spike - ALWAYS DEADLY NOW
             die();
         }
         if(t===3 && currentMode !== MODE.ENDLESS) win();
@@ -692,6 +759,11 @@ function die() {
     currentStreak = 0; updateStreakUI();
     updateDaily("deaths");
     
+    deathsInLevel++;
+    if(deathsInLevel >= 5 && currentMode !== MODE.ENDLESS) {
+        document.getElementById('hud-skip').style.display = 'block';
+    }
+    
     save();
     FX.boom(P.x, P.y, 30, '#fff');
     setTimeout(() => {
@@ -705,8 +777,9 @@ function win() {
     state = 'WIN';
     currentStreak++; updateStreakUI();
     updateDaily("levels");
+    deathsInLevel = 0; // Reset count
     
-    let duration = Date.now() - startTime;
+    let duration = gameTimer; // Use gameTimer for Time Trial
     
     // Shared Unlock Logic
     if(Save.level >= Save.maxLvl) { Save.maxLvl++; Save.money+=200; }
@@ -747,6 +820,7 @@ function showWinMenu(time, isRecord) {
     let rec = document.getElementById('win-new-record');
     
     rec.style.display = isRecord ? 'block' : 'none';
+    document.getElementById('win-level-num').innerText = "LEVEL " + (Save.level + 1) + " COMPLETE";
     
     let ms = Math.floor((time % 1000) / 10);
     let s = Math.floor((time / 1000) % 60);
@@ -843,8 +917,16 @@ function genEndless(init) {
 function startGame(n, mode) {
     currentMode = mode;
     paused = false;
+    // Don't reset deathsInLevel here globally.
     document.getElementById('pause-menu').style.display = 'none';
     document.getElementById('win-menu').style.display = 'none';
+    
+    // Show skip if condition met
+    if (deathsInLevel >= 5 && currentMode !== MODE.ENDLESS) {
+         document.getElementById('hud-skip').style.display = 'block';
+    } else {
+         document.getElementById('hud-skip').style.display = 'none';
+    }
     
     // Setup Map
     if(currentMode !== MODE.ENDLESS) {
@@ -861,9 +943,11 @@ function startGame(n, mode) {
         P.reset(100, 400);
         document.getElementById('prog-container').style.display = 'none';
         currentStreak = 0; // Reset streak on endless start
+        deathsInLevel = 0; // Reset for endless
     }
     
     startTime = Date.now();
+    gameTimer = 0; // Reset accumulated game time
     parts=[]; texts=[]; state='PLAY';
     document.getElementById('ui').style.display='block';
     document.getElementById('menu').classList.remove('active');
@@ -948,9 +1032,15 @@ function update(dt) {
         document.getElementById('prog-bar').style.width = Math.min(100, Math.max(0, p)) + '%';
     }
     
-    // Only update timer visual if in Time Trial
+    // Timer Update logic with Time Scale
+    let timeScale = P.chronoActive ? 0.4 : 1.0;
+    
     if(currentMode === MODE.TIME) {
-        let t = Date.now() - startTime;
+        // Accumulate Game Time relative to speed
+        // dt is roughly 1.0 at 60fps. 1.0 * 16.666 = ~16ms
+        gameTimer += dt * 16.666 * timeScale;
+        
+        let t = gameTimer;
         let ms = Math.floor((t % 1000) / 10);
         let s = Math.floor((t / 1000) % 60);
         let m = Math.floor(t / 60000);
@@ -1083,7 +1173,7 @@ function draw() {
     P.draw();
     ctx.restore();
     
-    document.getElementById('val-money').innerText = Save.money;
+    // document.getElementById('val-money').innerText = Save.money; // Removed since money is hidden
 }
 
 // FX
@@ -1128,6 +1218,7 @@ var Game = {
     },
     
     nextLevel() {
+        deathsInLevel = 0; // Reset for next level
         if (Save.level + 1 >= CFG.MAX_LEVELS) Game.menu();
         else startGame(Save.level + 1, currentMode);
     },
@@ -1136,7 +1227,27 @@ var Game = {
         startGame(Save.level, currentMode);
     },
     
+    skipLevel() {
+        // Mark current as "done" artificially
+        if(Save.level >= Save.maxLvl) { 
+            Save.maxLvl++; 
+            if(!Save.skipped.includes(Save.level)) Save.skipped.push(Save.level);
+        }
+        save();
+        // Go next
+        this.nextLevel();
+    },
+    
     renderMain() {
+        // Badge Logic for Shop Button
+        let hasMoney = false;
+        // Check Skins
+        if(DB.skins.some((s, i) => !Save.skins.includes(i) && Save.money >= s.p)) hasMoney = true;
+        // Check Upgrades
+        if(!hasMoney && DB.upgrades.some(u => !Save.ups[u.id] && Save.money >= u.p)) hasMoney = true;
+        
+        let badgeHtml = hasMoney ? '<div class="badge"></div>' : '';
+
         let h = `
             <h1>NEON <span>LEAP</span></h1>
             <h2>ULTIMATE STATS</h2>
@@ -1157,7 +1268,7 @@ var Game = {
             </div>
 
             <button class="btn btn-primary" onclick="Game.renderStats()">PROFILE & STATS</button>
-            <button class="btn btn-rare" onclick="Game.renderShop()">SHOP</button>
+            <button class="btn btn-rare" onclick="Game.renderShop()" style="position:relative;">SHOP ${badgeHtml}</button>
             <button class="btn" onclick="Game.renderChal()">CHALLENGES</button>
         `;
         document.getElementById('menu-content').innerHTML = h;
@@ -1167,7 +1278,8 @@ var Game = {
         let h = `<h2>SELECT LEVEL (${targetMode === MODE.TIME ? "TIME TRIAL" : "ADVENTURE"})</h2><div class="level-grid">`;
         for(let i=0; i<CFG.MAX_LEVELS; i++) {
             let u = i <= Save.maxLvl;
-            let c = i < Save.maxLvl ? 'completed' : '';
+            let isSkipped = Save.skipped.includes(i);
+            let c = i < Save.maxLvl ? (isSkipped ? 'skipped' : 'completed') : '';
             let t = "";
             
             // Show time if in Time Trial Mode and we have a record
@@ -1179,7 +1291,7 @@ var Game = {
             }
 
             let cl = u ? `unlocked ${c}` : '';
-            let clk = u ? `onclick="startGame(${i}, ${targetMode})"` : '';
+            let clk = u ? `onclick="deathsInLevel=0; startGame(${i}, ${targetMode})"` : '';
             h += `<div class="lvl-btn ${cl}" ${clk}><div class="lvl-num">${i+1}</div>${t}</div>`;
         }
         h += `</div><button class="btn" onclick="Game.renderMain()">BACK</button>`;
@@ -1249,6 +1361,7 @@ var Game = {
     renderShop() {
         let h = `
         <div class="shop-container">
+            <div style="text-align:right; font-size:1.5rem; margin-bottom:10px; color:var(--c-accent); font-weight:bold;">BALANCE: <span id="shop-balance">${Save.money}</span> ₳</div>
             <div class="shop-nav">
                 <button class="shop-tab active" id="tab-skin" onclick="Game.switchShop('skin')">SKINS</button>
                 <button class="shop-tab" id="tab-up" onclick="Game.switchShop('up')">UPGRADES</button>
@@ -1286,7 +1399,7 @@ var Game = {
             let msg = valid[code] > 100000 ? "UNLIMITED POWER!" : valid[code] + " Coins!";
             alert("Redeemed: " + msg);
             save();
-            document.getElementById('val-money').innerText = Save.money;
+            document.getElementById('val-money').innerText = Save.money; // Won't show in game, but will update if visible
             Game.renderShop(); // Refresh to update buy buttons if affordable
         } else {
             alert("Invalid Code");
@@ -1342,6 +1455,7 @@ var Game = {
         if(Save.money >= s.p) {
             Save.money -= s.p; Save.skins.push(id); Save.skin = id;
             this.switchShop('skin'); save();
+            document.getElementById('shop-balance').innerText = Save.money;
         }
     },
     
@@ -1351,6 +1465,7 @@ var Game = {
         if(Save.money >= u.p) {
             Save.money -= u.p; Save.ups[id] = true;
             this.switchShop('up'); save();
+            document.getElementById('shop-balance').innerText = Save.money;
         }
     },
 
@@ -1371,25 +1486,24 @@ var Game = {
                 let dDone = task.c;
                 
                 dailyHTML += `
-                <div class="chal-item" style="border-color:${dDone?'var(--c-accent)':'var(--c-primary)'}">
-                    <div style="position:absolute; bottom:0; left:0; height:3px; background:${dDone?'var(--c-accent)':'var(--c-primary)'}; width:${dProg}%"></div>
-                    <div style="z-index:2; position:relative; display:flex; justify-content:space-between; width:100%">
-                        <div style="text-align:left">
-                            <div style="color:${dDone?'var(--c-accent)':'#fff'}; font-weight:bold">DAILY: ${def.n}</div>
-                            <div style="color:#aaa; font-size:0.8rem">${def.d}</div>
-                        </div>
-                        <div style="text-align:right">
-                             <div style="font-weight:bold; color:${dDone?'var(--c-accent)':'#fff'}">${dDone ? 'CLAIMED' : dProg.toFixed(0)+'%'}</div>
-                             <div style="font-size:0.8rem; color:var(--c-accent)">Reward: ${def.r}</div>
-                        </div>
+                <div class="chal-card ${dDone?'done':''}">
+                    <div class="chal-progress-bg"><div class="chal-progress-fill" style="width:${dProg}%"></div></div>
+                    <div class="chal-icon-box">${def.ic || '📅'}</div>
+                    <div class="chal-text">
+                        <div class="chal-title">DAILY: ${def.n}</div>
+                        <div class="chal-desc">${def.d}</div>
+                    </div>
+                    <div class="chal-meta">
+                        <div class="chal-status">${dDone ? 'CLAIMED' : dProg.toFixed(0)+'%'}</div>
+                        <div class="chal-reward">+${def.r} ₳</div>
                     </div>
                 </div>`;
             }
         });
 
         let h = `<h2>CHALLENGES</h2>
-        <div style="color:var(--c-primary); margin-bottom:15px; font-weight:bold">DAILY RESET IN ${hLeft}H ${mLeft}M</div>
-        <div style='width:100%; max-width:800px; display:flex; flex-direction:column; gap:10px'>
+        <div style="color:var(--c-primary); margin-bottom:15px; font-weight:bold; font-size:1.2rem;">DAILY RESET IN ${hLeft}H ${mLeft}M</div>
+        <div style='width:100%; max-width:800px;'>
             ${dailyHTML}
         `;
         
@@ -1397,17 +1511,16 @@ var Game = {
             let done = Save.chals.includes(c.id);
             let prog = Math.min(100, (Save.stats[c.stat] / c.goal) * 100);
             h += `
-            <div class="chal-item" style="background:#111; padding:15px; border:1px solid ${done?'var(--c-accent)':'#333'}; position:relative; overflow:hidden;">
-                <div style="position:absolute; bottom:0; left:0; height:3px; background:var(--c-primary); width:${prog}%"></div>
-                <div style="z-index:2; position:relative; display:flex; justify-content:space-between; width:100%">
-                    <div style="text-align:left">
-                        <div style="color:${done?'var(--c-accent)':'#fff'}; font-weight:bold">${c.n}</div>
-                        <div style="color:#666; font-size:0.8rem">${c.d}</div>
-                    </div>
-                    <div style="text-align:right">
-                         <div style="font-weight:bold; color:${done?'var(--c-accent)':'#fff'}">${done ? 'COMPLETED' : prog.toFixed(0)+'%'}</div>
-                         <div style="font-size:0.8rem; color:var(--c-accent)">Reward: ${c.r}</div>
-                    </div>
+            <div class="chal-card ${done?'done':''}">
+                <div class="chal-progress-bg"><div class="chal-progress-fill" style="width:${prog}%"></div></div>
+                <div class="chal-icon-box">${c.ic || '🏆'}</div>
+                <div class="chal-text">
+                    <div class="chal-title">${c.n}</div>
+                    <div class="chal-desc">${c.d}</div>
+                </div>
+                <div class="chal-meta">
+                    <div class="chal-status">${done ? 'COMPLETED' : prog.toFixed(0)+'%'}</div>
+                    <div class="chal-reward">+${c.r} ₳</div>
                 </div>
             </div>`;
         });
