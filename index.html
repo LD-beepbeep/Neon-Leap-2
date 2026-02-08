@@ -471,14 +471,14 @@ var DB = {
         {n:"Demon", c:"#600", b:"#f00", eye:1, p:75000}
     ],
     upgrades: [
-        {id:"double", n:"Double Jump", d:"Jump again in mid-air", p:2500, passive:true},
+        {id:"double", n:"Double Jump", d:"Jump again in mid-air", p:2500, ic:"✌", passive:true},
         {id:"dash", n:"Phase Dash", d:"Shift/X to Dash", p:3500, ic:"⚡", active:true},
-        {id:"magnet", n:"Coin Magnet", d:"Attracts coins", p:4000, passive:true},
-        {id:"climb", n:"Wall Climb", d:"Climb walls", p:5000, passive:true},
-        {id:"stomp", n:"Super Stomp", d:"Down to smash", p:7000, passive:true},
-        {id:"chrono", n:"Chrono Shift", d:"Press C to slow time", p:25000, active:true},
-        {id:"sonic", n:"Sonic Boom", d:"Speed destroys enemies", p:18000, passive:true},
-        {id:"glider", n:"Glider", d:"Hold Jump to glide", p:15000, passive:true},
+        {id:"magnet", n:"Coin Magnet", d:"Attracts coins", p:4000, ic:"🪙", passive:true},
+        {id:"climb", n:"Wall Climb", d:"Climb walls", p:5000, ic:"🧗", passive:true},
+        {id:"stomp", n:"Super Stomp", d:"Down to smash", p:7000, ic:"👣", passive:true},
+        {id:"chrono", n:"Chrono Shift", d:"Press C to slow time", p:25000, ic:"⌛", active:true},
+        {id:"sonic", n:"Sonic Boom", d:"Speed destroys enemies", p:18000, ic:"💥", passive:true},
+        {id:"glider", n:"Glider", d:"Hold Jump to glide", p:15000, ic:"🦘", passive:true},
         {id:"customizer", n:"Designer License", d:"Unlocks Skin Studio", p:50000, ic:"🎨", special:true}
     ],
     backgrounds: [
@@ -1470,7 +1470,7 @@ var Game = {
                 <button class="shop-tab active" id="tab-skin" onclick="Game.switchShop('skin')">SKINS</button>
                 <button class="shop-tab" id="tab-up" onclick="Game.switchShop('up')">UPGRADES</button>
                 <button class="shop-tab" id="tab-bg" onclick="Game.switchShop('bg')">SCENES</button>
-                <button class="shop-tab" id="tab-custom" onclick="Game.switchShop('custom')">STUDIO 🎨</button>
+                <button class="shop-tab" id="tab-custom" onclick="Game.switchShop('custom')">STUDIO</button>
             </div>
             <div class="coupon-area">
                 <input type="text" id="coupon-in" class="coupon-input" placeholder="ENTER CODE">
