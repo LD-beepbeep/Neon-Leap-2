@@ -6,6 +6,7 @@
 <title>Neon Leap 2</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700;800&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap'); /* Retro Font for Studio */
   
   :root {
     --c-bg: #05070a;
@@ -14,7 +15,8 @@
     --c-danger: #ff0055;
     --c-rare: #a020f0;
     --c-fire: #ff6600;
-    --c-skip: #888888;
+    --c-skip: #888;
+    --c-success: #00ffaa;
     --font-main: 'Rajdhani', sans-serif;
   }
   
@@ -24,6 +26,7 @@
       --c-primary: #0077cc;
       --c-accent: #dcb000;
       --c-danger: #d90048;
+      --c-success: #00aa70;
   }
 
   html,body { margin:0; padding:0; width:100%; height:100%; background:var(--c-bg); overflow:hidden; font-family:var(--font-main); user-select:none; -webkit-user-select:none; transition: background 0.3s; }
@@ -131,7 +134,7 @@
       backdrop-filter: blur(10px);
       display: flex; flex-direction: column; align-items: center; justify-content: center;
   }
-  body.light-mode .overlay-menu { background: rgba(255,255,255,0.85); }
+  body.light-mode .overlay-menu { background: rgba(255,255,255,0.95); }
   
   .win-title { font-size: 3rem; color: #fff; font-weight: 900; font-style: italic; text-transform: uppercase; margin-bottom: 10px; }
   body.light-mode .win-title { color: #333; }
@@ -180,37 +183,46 @@
   /* STUDIO PIXEL ART STYLE */
   .studio-box {
       grid-column: 1/-1;
-      background: rgba(0,0,0,0.6);
-      border: 4px solid #333; /* Blocky retro border */
-      padding: 25px;
-      font-family: 'Courier New', monospace; /* Retro font */
-      color: #fff; /* Default white */
-      text-transform: uppercase;
-      letter-spacing: 1px;
+      background: #111;
+      border: 4px solid #333;
+      padding: 20px;
+      font-family: 'VT323', monospace;
+      color: #0f0; /* Retro Terminal Green */
+      box-shadow: 0 0 20px rgba(0,0,0,0.5);
   }
-  body.light-mode .studio-box {
-      background: rgba(255,255,255,0.9);
-      border-color: #888;
-      color: #000; /* Black in light mode */
-  }
-  .studio-row { 
-      display: flex; justify-content: space-between; align-items: center; width: 100%; padding: 15px 0; 
-      border-bottom: 2px dashed rgba(255,255,255,0.2); 
-  }
-  body.light-mode .studio-row { border-bottom-color: rgba(0,0,0,0.2); }
-  .color-picker { border: 2px solid #555; width: 60px; height: 35px; cursor: pointer; background: none; padding: 2px; }
+  body.light-mode .studio-box { background: #eee; border-color: #999; color: #000; }
   
-  #custom-preview { 
-      width: 80px; height: 80px; margin: 10px; position: relative;
-      box-shadow: 0 0 0 4px rgba(0,0,0,0.3);
+  .studio-header { font-size: 2rem; text-align: center; border-bottom: 2px dashed #333; margin-bottom: 20px; padding-bottom: 10px; }
+  .pixel-grid { 
+      display: grid; grid-template-columns: repeat(6, 1fr); gap: 2px; width: 240px; margin: 0 auto; 
+      background: #222; padding: 5px; border: 2px solid #555; position: relative;
   }
-  /* Eyes for preview */
-  #custom-preview::before, #custom-preview::after {
-      content: ''; position: absolute; top: 20%; width: 20%; height: 20%; background: #fff;
-      border: 2px solid rgba(0,0,0,0.2); /* Slight border for eyes */
+  body.light-mode .pixel-grid { background: #ddd; border-color: #bbb; }
+  .pixel-cell { width: 35px; height: 35px; background: #000; cursor: pointer; transition: 0.0s; }
+  .pixel-cell:hover { box-shadow: inset 0 0 0 2px rgba(255,255,255,0.5); }
+  
+  /* EYE GUIDES IN STUDIO */
+  .eye-guide {
+      pointer-events: none; position: absolute; background: rgba(255,255,255,0.3); border: 1px solid rgba(0,0,0,0.2);
   }
-  #custom-preview::before { left: 15%; }
-  #custom-preview::after { right: 15%; }
+  
+  .studio-controls { margin-top: 20px; display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
+  .color-swatch { width: 30px; height: 30px; border-radius: 4px; cursor: pointer; border: 2px solid transparent; }
+  .color-swatch.active { border-color: #fff; transform: scale(1.2); box-shadow: 0 0 10px rgba(255,255,255,0.5); }
+  body.light-mode .color-swatch.active { border-color: #000; box-shadow: 0 0 10px rgba(0,0,0,0.5); }
+
+  .studio-locked { 
+      grid-column: 1/-1; text-align: center; padding: 40px; 
+      background: repeating-linear-gradient(45deg, #111, #111 10px, #1a1a1a 10px, #1a1a1a 20px);
+      border: 2px solid var(--c-danger); color: var(--c-danger); font-weight: bold; font-size: 1.5rem;
+  }
+  body.light-mode .studio-locked { background: repeating-linear-gradient(45deg, #ddd, #ddd 10px, #eee 10px, #eee 20px); }
+  
+  /* MINI PREVIEW GRID */
+  #mini-grid-prev {
+      display: grid; grid-template-columns: repeat(6, 1fr); width: 80px; height: 80px;
+      margin: 10px auto; border: 2px solid #555;
+  }
 
   .menu-screen {
       position: absolute; top:0; left:0; width:100%; height:100%; 
@@ -310,20 +322,24 @@
 
   .level-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); gap: 10px; width: 100%; max-width: 900px; padding-bottom: 40px; }
   .lvl-btn { width: 70px; height: 70px; background: #111; border: 1px solid #333; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #555; border-radius: 4px; cursor: default; transition: 0.2s; font-weight: bold; position: relative; }
-  body.light-mode .lvl-btn { background: #fff; border-color: #ddd; }
+  body.light-mode .lvl-btn { background: #fff; border-color: #ccc; color: #aaa; }
   .lvl-num { font-size: 1.4rem; }
   .lvl-time { font-size: 0.7rem; margin-top: 2px; color: var(--c-primary); font-family: monospace; }
+  
+  /* UPDATED LEVEL STATUS COLORS */
   .lvl-btn.unlocked { color: #fff; border-color: var(--c-primary); cursor: pointer; background: rgba(0, 241, 255, 0.1); }
-  body.light-mode .lvl-btn.unlocked { color: #333; }
-  .lvl-btn.unlocked:hover { background: var(--c-primary); color: #000; transform: scale(1.1); }
-  .lvl-btn.completed { border-color: var(--c-accent); color: var(--c-accent); background: rgba(255, 233, 0, 0.1); }
+  body.light-mode .lvl-btn.unlocked { color: #333; background: #fff; border-color: var(--c-primary); }
+  
+  .lvl-btn.completed { border-color: var(--c-success); color: var(--c-success); background: rgba(0, 255, 170, 0.1); }
+  body.light-mode .lvl-btn.completed { background: rgba(0, 255, 170, 0.2); border-color: var(--c-success); color: #005530; }
+  
   .lvl-btn.skipped { border-color: var(--c-skip); color: var(--c-skip); background: rgba(255, 255, 255, 0.05); }
-  .lvl-btn.skipped .lvl-time { color: #666; }
+  body.light-mode .lvl-btn.skipped { background: #eee; border-color: #999; color: #777; }
 
   /* TOGGLE LIGHT MODE BTN */
   .theme-toggle { position: absolute; top: 20px; right: 20px; background: none; border: none; font-size: 2rem; cursor: pointer; color: #fff; z-index: 150; }
   body.light-mode .theme-toggle { color: #333; }
-
+  
   #mobile { display:none; position:absolute; bottom:0; left:0; width:100%; height:100%; z-index:50; pointer-events:none; }
   .t-btn { pointer-events:auto; position:absolute; width:75px; height:75px; border:2px solid rgba(255,255,255,0.1); border-radius:50%; display:flex; align-items:center; justify-content:center; color:rgba(255,255,255,0.6); font-size:30px; backdrop-filter:blur(5px); transition: 0.1s; }
   .t-btn:active { background: #fff; color: #000; opacity: 0.8; }
@@ -380,6 +396,19 @@
             <button class="btn btn-primary" onclick="Game.nextLevel()">NEXT LEVEL (S)</button>
         </div>
         <button class="btn" style="margin-top:0; min-width:auto; padding:15px 30px" onclick="Game.menu()">MENU</button>
+    </div>
+    
+    <!-- Game Complete Menu -->
+    <div id="victory-menu" class="overlay-menu" style="display:none;">
+        <h2 style="color:var(--c-accent); font-size:5rem; margin-bottom:10px; text-shadow:0 0 30px var(--c-accent)">VICTORY!</h2>
+        <div class="win-subtitle" style="color:#fff">ALL LEVELS COMPLETED</div>
+        <div class="stats-grid" style="width:100%; max-width:600px; margin-bottom:30px;">
+             <div class="stat-card"><div class="stat-val" id="vic-death">0</div><div class="stat-label">DEATHS</div></div>
+             <div class="stat-card"><div class="stat-val" id="vic-time">0s</div><div class="stat-label">TIME</div></div>
+             <div class="stat-card"><div class="stat-val" id="vic-skip">0</div><div class="stat-label">SKIPPED</div></div>
+        </div>
+        <button class="btn btn-primary" onclick="Game.downloadStats()">DOWNLOAD STATS</button>
+        <button class="btn btn-danger" onclick="Game.menu()">MAIN MENU</button>
     </div>
     
     <!-- Endless Game Over Menu -->
@@ -468,24 +497,30 @@ var DB = {
     ]
 };
 
+// Initial grid for custom skin: 6x6 grid of default yellow
+const DEFAULT_GRID = new Array(36).fill("#ffe900");
+
 var Save = { 
     money:0, level:0, maxLvl:0, skin:0, bg:0, skins:[0], bgs:[0], ups:{}, 
     stats:{jumps:0, distance:0, deaths:0, coins:0, maxEndless:0, unlocked:1},
     chals:[], times:{}, codes:[], skipped:[],
     daily: { date: "", tasks: [] },
     light: false,
-    customSkin: { c: "#00ff00", b: "#ffffff" }
+    customSkin: { type: 'grid', pixels: DEFAULT_GRID }
 };
 
 try { 
     let s=localStorage.getItem('nl20_ultimate'); 
     if(s) {
         let loaded = JSON.parse(s);
+        // Migration logic for older saves or different structure
+        if(!loaded.customSkin || !loaded.customSkin.pixels) loaded.customSkin = { type: 'grid', pixels: DEFAULT_GRID };
         Save = Object.assign(Save, loaded);
         if(!Save.bgs) Save.bgs = [0];
-        if(!Save.customSkin) Save.customSkin = { c: "#00ff00", b: "#ffffff" };
+        if(!Save.skipped) Save.skipped = [];
     }
 } catch(e){}
+
 const save = () => {
     Save.stats.unlocked = Save.maxLvl + 1;
     localStorage.setItem('nl20_ultimate', JSON.stringify(Save));
@@ -499,7 +534,6 @@ const DAILY_DEFS = [
     { id: 4, n: "High Jumper", d: "Jump 100 times today", goal: 100, r: 400, stat: "jumps", ic: "🐇" }
 ];
 
-// Check Daily & Apply Theme
 const checkDaily = () => {
     let today = new Date().toDateString();
     if(Save.daily.date !== today) {
@@ -540,7 +574,6 @@ var gameTimer = 0;
 var currentStreak = 0; 
 var deathsInLevel = 0;
 
-// Input System
 var In = { k:{}, prevK:{}, init(){
     window.addEventListener('keydown', e => {
         In.k[e.code]=true;
@@ -553,7 +586,6 @@ var In = { k:{}, prevK:{}, init(){
     });
     window.addEventListener('keyup', e => In.k[e.code]=false);
     
-    // Auto Pause
     document.addEventListener("visibilitychange", () => {
         if (document.hidden && state === 'PLAY' && !paused) {
             Game.togglePause();
@@ -570,7 +602,6 @@ var In = { k:{}, prevK:{}, init(){
     t('mb-l','ArrowLeft'); t('mb-r','ArrowRight'); t('mb-j','ArrowUp'); t('mb-d','KeyX');
 }};
 
-// Player
 var P = {
     x:0, y:0, w:30, h:30, vx:0, vy:0,
     ground:false, wall:0, jumps:0,
@@ -716,90 +747,82 @@ var P = {
     draw() {
         if(this.dead) return;
         
-        let c = '#ffe900', b = null, glow = false;
-        
-        if (Save.skin === 999) { // Custom
-            c = Save.customSkin.c;
-            b = Save.customSkin.b;
-        } else {
-            let s = DB.skins[Save.skin];
-            c = s.c; b = s.b; glow = s.glow;
-        }
-        
+        // --- DRAW PLAYER ---
         if(Math.abs(this.vx) > 8) {
-            ctx.globalAlpha = 0.3; ctx.fillStyle = c;
+            ctx.globalAlpha = 0.3; ctx.fillStyle = '#fff';
             ctx.fillRect(this.x - this.vx*0.5, this.y - this.vy*0.5, 30, 30);
             ctx.globalAlpha = 1;
         }
-        
-        ctx.fillStyle = this.invincible > 0 ? '#fff' : c;
-        if(this.chronoActive) ctx.fillStyle = '#fff'; 
-        if(glow) { ctx.shadowBlur=20; ctx.shadowColor=c; }
+
+        ctx.save();
         
         let sx=0, sy=0;
         if(Math.abs(this.vy)>10) { sx=-4; sy=4; }
         if(Math.abs(this.vx)>8) { sx=4; sy=-2; }
         
-        ctx.save();
         ctx.translate(this.x+15, this.y+15);
-        ctx.fillRect(-15-sx/2, -15-sy, 30+sx, 30+sy);
         
-        if(b) {
-            ctx.strokeStyle = b;
-            ctx.lineWidth=3;
-            ctx.strokeRect(-15-sx/2, -15-sy, 30+sx, 30+sy);
+        // RENDER SKIN
+        if (Save.skin === 999) { // CUSTOM PIXEL GRID
+             let pixels = Save.customSkin.pixels;
+             let size = (30+sx)/6; // 6x6 grid
+             for(let i=0; i<36; i++) {
+                 let col = i%6; let row = Math.floor(i/6);
+                 ctx.fillStyle = pixels[i];
+                 ctx.fillRect(-15-sx/2 + col*size, -15-sy + row*size, size+0.5, size+0.5); // +0.5 to fix subpixel gaps
+             }
+        } else {
+             let s = DB.skins[Save.skin];
+             ctx.fillStyle = this.invincible > 0 ? '#fff' : s.c;
+             if(this.chronoActive) ctx.fillStyle = '#fff'; 
+             if(s.glow) { ctx.shadowBlur=20; ctx.shadowColor=s.c; }
+             
+             ctx.fillRect(-15-sx/2, -15-sy, 30+sx, 30+sy);
+             if(s.b) {
+                ctx.strokeStyle = s.b; ctx.lineWidth=3;
+                ctx.strokeRect(-15-sx/2, -15-sy, 30+sx, 30+sy);
+             }
         }
+
+        // EYES
+        ctx.fillStyle = Save.light ? "#333" : "#fff";
+        if(Save.light && (Save.skin === 0 || Save.skin === 999)) ctx.fillStyle = "#fff";
         
-        this.drawEyes(sx, sy);
-        ctx.restore();
-        ctx.shadowBlur=0;
-    },
-    
-    drawEyes(sx, sy) {
-        ctx.fillStyle = Save.light ? "#333" : "#fff"; // Dark eyes for light mode? Nah keep white
-        if(Save.light && (Save.skin === 0 || Save.skin === 999)) ctx.fillStyle = "#fff"; // Ensure visibility
-        
-        let lx = 0, ly = 0;
+        let lx = 0; 
         if(this.vx > 1) lx = 4; else if(this.vx < -1) lx = -4;
-        if(this.vy > 1) ly = 4; else if(this.vy < -1) ly = -4;
         
         if(frame % 150 < 10) {
-            ctx.fillRect(-8 + lx, -5 + ly, 6, 2);
-            ctx.fillRect(2 + lx, -5 + ly, 6, 2);
+            ctx.fillRect(-8 + lx, -5, 6, 2);
+            ctx.fillRect(2 + lx, -5, 6, 2);
         } else {
             ctx.fillRect(-10, -8, 8, 8);
             ctx.fillRect(2, -8, 8, 8);
             ctx.fillStyle = "#000";
-            ctx.fillRect(-8 + lx*0.5, -6 + ly*0.5, 4, 4);
-            ctx.fillRect(4 + lx*0.5, -6 + ly*0.5, 4, 4);
+            ctx.fillRect(-8 + lx*0.5, -6, 4, 4);
+            ctx.fillRect(4 + lx*0.5, -6, 4, 4);
         }
+
+        ctx.restore();
+        ctx.shadowBlur=0;
     }
 };
 
-// --- SEEDED RANDOM ---
 var _seed = 1;
-function rand() {
-    _seed = (_seed * 9301 + 49297) % 233280;
-    return _seed / 233280;
-}
+function rand() { _seed = (_seed * 9301 + 49297) % 233280; return _seed / 233280; }
 function setSeed(s) { _seed = s; }
 
-// --- PHYSICS ---
 function isSolid(x,y) {
     let tx = Math.floor(x/CFG.TILE), ty = Math.floor(y/CFG.TILE);
     if(ty<0) return false;
     if(currentMode === MODE.ENDLESS && tx >= endX - 50) genEndless();
     if(tx<0||tx>=map.w||ty>=map.h) return false;
-    let t = map.d[ty][tx];
-    return t===1;
+    return map.d[ty][tx]===1;
 }
 
 function col(axisX) {
     let tiles = [];
-    let startX = Math.floor(P.x / CFG.TILE);
-    let endX = Math.floor((P.x + P.w - 0.1) / CFG.TILE);
-    let startY = Math.floor(P.y / CFG.TILE);
-    let endY = Math.floor((P.y + P.h - 0.1) / CFG.TILE);
+    let startX = Math.floor(P.x / CFG.TILE), endX = Math.floor((P.x + P.w - 0.1) / CFG.TILE);
+    let startY = Math.floor(P.y / CFG.TILE), endY = Math.floor((P.y + P.h - 0.1) / CFG.TILE);
 
     for(let y=startY; y<=endY; y++) {
         for(let x=startX; x<=endX; x++) {
@@ -823,7 +846,7 @@ function col(axisX) {
     let tx = Math.floor(cx/CFG.TILE), ty = Math.floor(cy/CFG.TILE);
     if(ty>=0 && ty<map.h && tx>=0 && tx<map.w) {
         let t = map.d[ty][tx];
-        if(t===2) { die(); }
+        if(t===2) die();
         if(t===3 && currentMode !== MODE.ENDLESS) win();
         if(t===4) { P.vy = -25; FX.boom(P.x, P.y+20, 10, '#a0f'); }
     }
@@ -843,21 +866,17 @@ function die() {
     save();
     FX.boom(P.x, P.y, 30, '#fff');
     setTimeout(() => {
-        if(currentMode === MODE.ENDLESS) {
-            showEndlessMenu();
-        } else {
-            startGame(Save.level, currentMode);
-        }
+        if(currentMode === MODE.ENDLESS) showEndlessMenu();
+        else startGame(Save.level, currentMode); 
     }, 400); 
 }
 
 function showEndlessMenu() {
-    document.getElementById('ui').style.display='none'; // hide normal hud
+    document.getElementById('ui').style.display='none'; 
     let m = document.getElementById('endless-menu');
     document.getElementById('endless-score-val').innerText = endlessScore + "m";
     document.getElementById('endless-best-val').innerText = "BEST: " + Save.stats.maxEndless + "m";
     m.style.display = 'flex';
-    // Ensure menu is visible
     document.getElementById('ui').style.display='block';
 }
 
@@ -866,16 +885,20 @@ function win() {
     state = 'WIN';
     currentStreak++; updateStreakUI();
     updateDaily("levels");
-    deathsInLevel = 0; // Reset count
+    deathsInLevel = 0; 
     
-    let duration = gameTimer; // Use gameTimer for Time Trial
+    let duration = gameTimer;
     
-    // Shared Unlock Logic
     if(Save.level >= Save.maxLvl) { Save.maxLvl++; Save.money+=200; }
     else Save.money += 50; 
     save();
+
+    // Check game completion
+    if(Save.maxLvl >= CFG.MAX_LEVELS) {
+        showVictoryMenu();
+        return;
+    }
     
-    // Time Trial Special Logic
     if(currentMode === MODE.TIME) {
         let isRecord = false;
         if(!Save.times[Save.level] || duration < Save.times[Save.level]) {
@@ -917,6 +940,18 @@ function showWinMenu(time, isRecord) {
     let tStr = (min<10?"0"+min:min) + ":" + (s<10?"0"+s:s) + ":" + (ms<10?"0"+ms:ms);
     
     document.getElementById('win-time-val').innerText = tStr;
+    m.style.display = 'flex';
+}
+
+function showVictoryMenu() {
+    let m = document.getElementById('victory-menu');
+    document.getElementById('vic-death').innerText = Save.stats.deaths;
+    
+    let totalTime = 0;
+    Object.values(Save.times).forEach(v => totalTime += v);
+    document.getElementById('vic-time').innerText = (totalTime/1000).toFixed(0) + "s";
+    
+    document.getElementById('vic-skip').innerText = Save.skipped.length;
     m.style.display = 'flex';
 }
 
@@ -995,6 +1030,7 @@ function startGame(n, mode) {
     document.getElementById('pause-menu').style.display = 'none';
     document.getElementById('win-menu').style.display = 'none';
     document.getElementById('endless-menu').style.display = 'none';
+    document.getElementById('victory-menu').style.display = 'none';
     
     if (deathsInLevel >= 5 && currentMode !== MODE.ENDLESS) {
          document.getElementById('hud-skip').style.display = 'block';
@@ -1291,6 +1327,7 @@ var Game = {
         if(Save.light) document.body.classList.add('light-mode');
         else document.body.classList.remove('light-mode');
         save();
+        this.renderMain(); // refresh menu to update buttons style
     },
 
     menu() {
@@ -1300,6 +1337,7 @@ var Game = {
         document.getElementById('pause-menu').style.display='none';
         document.getElementById('win-menu').style.display='none';
         document.getElementById('endless-menu').style.display='none';
+        document.getElementById('victory-menu').style.display='none';
         let m = document.getElementById('menu');
         m.classList.add('active');
         this.renderMain();
@@ -1325,9 +1363,21 @@ var Game = {
         this.nextLevel();
     },
     
+    downloadStats() {
+        let t = `NEON LEAP 20.0 STATS\n------------------\nLevels: ${Save.maxLvl}/${CFG.MAX_LEVELS}\nDeaths: ${Save.stats.deaths}\nCoins: ${Save.stats.coins}\nDistance: ${Save.stats.distance.toFixed(0)}m\nSkipped Levels: ${Save.skipped.length}\nTime Trial Records:\n`;
+        for(let i=0; i<CFG.MAX_LEVELS; i++) {
+            if(Save.times[i]) t += `Level ${i+1}: ${(Save.times[i]/1000).toFixed(2)}s\n`;
+        }
+        let b = new Blob([t], {type: 'text/plain'});
+        let a = document.createElement('a');
+        a.href = URL.createObjectURL(b);
+        a.download = 'neon_leap_stats.txt';
+        a.click();
+    },
+    
     renderMain() {
         let h = `
-            <button class="theme-toggle" onclick="Game.toggleLight()" title="Toggle Light Mode">☀</button>
+            <button class="theme-toggle" id="theme-btn" onclick="Game.toggleLight()" title="Toggle Light Mode">☀</button>
             <h1>NEON <span>LEAP</span></h1>
             <h2>ULTIMATE STATS</h2>
             
@@ -1420,7 +1470,7 @@ var Game = {
                 <button class="shop-tab active" id="tab-skin" onclick="Game.switchShop('skin')">SKINS</button>
                 <button class="shop-tab" id="tab-up" onclick="Game.switchShop('up')">UPGRADES</button>
                 <button class="shop-tab" id="tab-bg" onclick="Game.switchShop('bg')">SCENES</button>
-                ${Save.ups.customizer ? '<button class="shop-tab" id="tab-custom" onclick="Game.switchShop(\'custom\')">STUDIO</button>' : ''}
+                <button class="shop-tab" id="tab-custom" onclick="Game.switchShop('custom')">STUDIO 🎨</button>
             </div>
             <div class="coupon-area">
                 <input type="text" id="coupon-in" class="coupon-input" placeholder="ENTER CODE">
@@ -1454,12 +1504,11 @@ var Game = {
         let h = "";
         
         if(type==='skin') {
-            // CUSTOM SKIN CARD (if owned)
             if(Save.ups.customizer) {
                 let sel = Save.skin === 999;
                 h += `<div class="shop-card ${sel?'selected':''}">
-                    <div class="card-preview" style="background:${Save.customSkin.c}; border:2px solid ${Save.customSkin.b}"></div>
-                    <div style="font-weight:bold; color:#fff">CUSTOM</div>
+                    <div class="card-preview" style="background:#333; border:2px solid #fff; display:grid; grid-template-columns:repeat(6,1fr);"></div>
+                    <div style="font-weight:bold; color:var(--c-primary)">MY PIXEL SKIN</div>
                     ${sel ? '<button class="card-btn">EQUIPPED</button>' : '<button class="card-btn" onclick="Game.buySkin(999)">EQUIP</button>'}
                 </div>`;
             }
@@ -1471,10 +1520,8 @@ var Game = {
                     : `<button class="card-btn buy" onclick="Game.buySkin(${i})">BUY ${s.p}</button>`;
                 h += `
                 <div class="shop-card ${owned?'owned':''} ${sel?'selected':''}">
-                    <div class="card-preview" style="background:${s.c}; border:${s.b?'2px solid '+s.b:'none'}; box-shadow:${s.glow?'0 0 15px '+s.c:'none'}">
-                        ${s.eye ? '<div style="width:4px;height:4px;background:#000;margin:0 2px"></div><div style="width:4px;height:4px;background:#000;margin:0 2px"></div>' : ''}
-                    </div>
-                    <div style="font-weight:bold; color:#fff">${s.n}</div>
+                    <div class="card-preview" style="background:${s.c}; border:${s.b?'2px solid '+s.b:'none'}; box-shadow:${s.glow?'0 0 15px '+s.c:'none'}"></div>
+                    <div style="font-weight:bold; color:var(--c-primary)">${s.n}</div>
                     ${btn}
                 </div>`;
             });
@@ -1485,8 +1532,8 @@ var Game = {
                 let btn = owned ? '<button class="card-btn">OWNED</button>' : `<button class="card-btn buy" onclick="Game.buyUp('${u.id}')">BUY ${u.p}</button>`;
                 h += `
                 <div class="shop-card ${owned?'owned':''}">
-                    <div class="card-preview" style="color:#fff; background:#222;">${u.ic || '★'}</div>
-                    <div style="font-weight:bold; color:#fff">${u.n}</div>
+                    <div class="card-preview" style="color:var(--c-primary); background:#222;">${u.ic || '★'}</div>
+                    <div style="font-weight:bold; color:var(--c-primary)">${u.n}</div>
                     <div style="font-size:0.8rem; color:#888; margin-top:5px">${u.d}</div>
                     ${btn}
                 </div>`;
@@ -1500,31 +1547,53 @@ var Game = {
                     ? (sel ? '<button class="card-btn">EQUIPPED</button>' : `<button class="card-btn" onclick="Game.buyBg(${b.id})">EQUIP</button>`)
                     : `<button class="card-btn buy" onclick="Game.buyBg(${b.id})">BUY ${b.p}</button>`;
                 h += `<div class="shop-card ${owned?'owned':''} ${sel?'selected':''}">
-                    <div class="card-preview" style="color:#fff; background:#111;">${b.id+1}</div>
-                    <div style="font-weight:bold; color:#fff">${b.n}</div>
+                    <div class="card-preview" style="color:var(--c-primary); background:#111;">${b.id+1}</div>
+                    <div style="font-weight:bold; color:var(--c-primary)">${b.n}</div>
                     ${btn}
                 </div>`;
             });
         }
         else if(type==='custom') {
-            // Skin Customizer UI - PIXEL ART STYLE
+            if (!Save.ups.customizer) {
+                 g.innerHTML = `
+                 <div class="studio-locked">
+                     <div>ACCESS DENIED</div>
+                     <div style="font-size:1rem; margin-top:10px; color:#fff;">DESIGNER LICENSE REQUIRED</div>
+                     <button class="btn btn-primary" onclick="Game.buyUp('customizer')" style="margin-top:20px;">BUY LICENSE (50,000)</button>
+                 </div>`;
+                 return;
+            }
+            
+            // Pixel Art Grid
+            let gridHTML = "";
+            Save.customSkin.pixels.forEach((col, idx) => {
+                 gridHTML += `<div id="px-cell-${idx}" class="pixel-cell" style="background:${col}" onclick="Game.pixelClick(${idx})"></div>`;
+            });
+            
+            // Palette
+            let colors = ["#ff0000", "#ff7f00", "#ffff00", "#00ff00", "#0000ff", "#4b0082", "#9400d3", "#ffffff", "#888888", "#000000", "#00f1ff", "#ff0055"];
+            let palHTML = "";
+            colors.forEach(c => {
+                 palHTML += `<div class="color-swatch" style="background:${c}" onclick="Game.setPalette('${c}', this)"></div>`;
+            });
+
             g.innerHTML = `
             <div class="studio-box">
-                <h3 style="margin-top:0; text-align:center; border-bottom:2px solid #fff; padding-bottom:10px;">:: SKIN STUDIO ::</h3>
-                <div style="display:flex; gap:20px; margin-top:20px; align-items:flex-start;">
-                    <div style="flex:1;">
-                        <div class="studio-row">
-                            <span>BODY HEX</span>
-                            <input type="color" class="color-picker" value="${Save.customSkin.c}" onchange="Game.setCustomSkin('c', this.value)">
-                        </div>
-                        <div class="studio-row">
-                            <span>BORDER HEX</span>
-                            <input type="color" class="color-picker" value="${Save.customSkin.b}" onchange="Game.setCustomSkin('b', this.value)">
-                        </div>
+                <div class="studio-header">PIXEL STUDIO v1.0</div>
+                <div style="display:flex; justify-content:center; gap:20px; flex-wrap:wrap;">
+                    <div style="position:relative;">
+                         <div class="pixel-grid">
+                            <!-- EYES OVERLAY -->
+                            <div class="eye-guide" style="top:25%; left:12%; width:15%; height:10%;"></div>
+                            <div class="eye-guide" style="top:25%; right:12%; width:15%; height:10%;"></div>
+                            ${gridHTML}
+                         </div>
+                         <div style="text-align:center; font-size:0.8rem; color:#aaa; margin-top:5px;">CANVAS</div>
                     </div>
-                    <div style="display:flex; flex-direction:column; align-items:center;">
-                        <div style="margin-bottom:5px;">PREVIEW</div>
-                        <div id="custom-preview" style="background:${Save.customSkin.c}; border:4px solid ${Save.customSkin.b};"></div>
+                    <div style="width:200px;">
+                        <div style="margin-bottom:10px; text-align:center;">PALETTE</div>
+                        <div class="studio-controls">${palHTML}</div>
+                        <div style="margin-top:20px; text-align:center;">SELECTED: <div id="cur-color" style="display:inline-block; width:20px; height:20px; border:1px solid #fff; background:${Game.curColor||'#fff'}"></div></div>
                     </div>
                 </div>
                 <div style="text-align:center; margin-top:20px;">
@@ -1536,13 +1605,25 @@ var Game = {
         g.innerHTML = h;
     },
     
+    curColor: "#ffffff",
+    
+    setPalette(c, el) {
+        Game.curColor = c;
+        document.getElementById('cur-color').style.background = c;
+        document.querySelectorAll('.color-swatch').forEach(e=>e.classList.remove('active'));
+        if(el) el.classList.add('active');
+    },
+    
+    pixelClick(idx) {
+        Save.customSkin.pixels[idx] = Game.curColor;
+        save();
+        // Live update the cell
+        let cell = document.getElementById('px-cell-'+idx);
+        if(cell) cell.style.background = Game.curColor;
+    },
+    
     setCustomSkin(key, val) {
-        Save.customSkin[key] = val;
-        let p = document.getElementById('custom-preview');
-        if(p) {
-            p.style.background = Save.customSkin.c;
-            p.style.borderColor = Save.customSkin.b;
-        }
+        // Legacy support function if needed
         save();
     },
     
